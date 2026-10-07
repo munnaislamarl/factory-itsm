@@ -27,7 +27,7 @@ export const LOOKUP_COLLECTIONS = [
 ] as const
 
 export const CACHE_KEYS = {
-  lookups: 'lookups:all',
+  lookups: 'lookups:v2:all',
   dashboard: (scope: string) => `dashboard:${scope}`,
   list: (collection: string, optionsKey: string) => `list:${collection}:${optionsKey}`,
 }

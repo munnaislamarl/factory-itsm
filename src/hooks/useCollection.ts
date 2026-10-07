@@ -31,7 +31,7 @@ export function useCollection<T>(collection: CollectionName, options: QueryOptio
     cacheKey,
   )
 
-  const items = resource.data ?? []
+  const items = Array.isArray(resource.data) ? resource.data : []
 
   const create = useCallback(
     async (data: Partial<T>, actor: string) => {

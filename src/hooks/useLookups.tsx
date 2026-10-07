@@ -46,20 +46,31 @@ interface LookupContextValue {
 
 const LookupContext = createContext<LookupContextValue | null>(null)
 
+/** Guarantees every lookup field is an array, no matter what the backend/cache returns. */
+function coerce(state: unknown): LookupState {
+  const source = (state ?? {}) as Record<string, unknown>
+  const out: Record<string, unknown[]> = {}
+  ;(Object.keys(EMPTY) as (keyof LookupState)[]).forEach((key) => {
+    const value = source[key as string]
+    out[key] = Array.isArray(value) ? value : []
+  })
+  return out as unknown as LookupState
+}
+
 function locationLabel(location: LookupState['locations'][number]): string {
   return [location.building, location.floor, location.room].filter(Boolean).join(' · ')
 }
 
 export function LookupProvider({ children }: { children: ReactNode }) {
   const [data, setData] = useState<LookupState>(
-    () => cacheGet<LookupState>(CACHE_KEYS.lookups) ?? EMPTY,
+    () => coerce(cacheGet(CACHE_KEYS.lookups)),
   )
   const [loading, setLoading] = useState(() => cacheGet(CACHE_KEYS.lookups) === null)
 
   const load = useCallback(async () => {
     try {
       const bundle = await dataSource.getLookups()
-      const next: LookupState = { ...EMPTY, ...bundle }
+      const next = coerce(bundle)
       cacheSet(CACHE_KEYS.lookups, next)
       setData(next)
     } catch {
@@ -80,12 +91,13 @@ export function LookupProvider({ children }: { children: ReactNode }) {
           'ticket_subcategories',
         ] as const
         const results = await Promise.all(names.map((name) => dataSource.list(name)))
-        const next = { ...EMPTY } as unknown as Record<string, unknown>
+        const bundle: Record<string, unknown[]> = {}
         names.forEach((name, index) => {
-          next[name] = results[index]
+          bundle[name] = results[index]
         })
-        cacheSet(CACHE_KEYS.lookups, next as unknown as LookupState)
-        setData(next as unknown as LookupState)
+        const next = coerce(bundle)
+        cacheSet(CACHE_KEYS.lookups, next)
+        setData(next)
       } catch {
         // keep whatever is cached so the UI stays usable
       }
