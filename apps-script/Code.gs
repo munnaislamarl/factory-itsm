@@ -95,6 +95,7 @@ function route(action, body) {
     case 'spareAction': return spareAction(body.payload, body.actor);
     case 'authenticate': return authenticate(body.identifier, body.password);
     case 'listActivity': return readObjects('activity').slice(0, 60);
+    case 'getLookups': return getLookups();
     case 'getDashboard': return getDashboard(body.scope || {});
     case 'getReport': return getReport(body.report, body.filter || {});
     default: throw new Error('Unknown action: ' + action);
@@ -633,6 +634,28 @@ function mapById(list) {
   return map;
 }
 
+/**
+ * Returns every reference collection in a single round-trip. The frontend
+ * needs all of these to render dropdowns and name lookups, so batching them
+ * avoids a dozen slow Apps Script calls on every page load.
+ */
+function getLookups() {
+  var names = ['departments', 'locations', 'employees', 'users', 'vendors', 'assets', 'servers', 'software', 'spare_parts', 'ticket_categories', 'ticket_subcategories'];
+  var result = {};
+  names.forEach(function (name) {
+    result[name] = activeObjects(name).map(stripMeta);
+  });
+  return result;
+}
+
+/**
+ * No-op used by a time-driven trigger (every 5 minutes) to keep the web app
+ * warm so user requests do not pay the cold-start penalty.
+ */
+function keepWarm() {
+  return 'ok';
+}
+
 /* ------------------------------------------------------------------ */
 /* Reports                                                             */
 /* ------------------------------------------------------------------ */
@@ -795,4 +818,320 @@ function seedReferenceData() {
   });
 
   SpreadsheetApp.getActive().toast('Reference data seeded.');
+}
+
+/* ------------------------------------------------------------------ */
+/* Optional sample data                                                */
+/* ------------------------------------------------------------------ */
+
+function isoDay(offset) {
+  return new Date(new Date().getTime() + offset * 86400000).toISOString();
+}
+
+function stampRow(obj) {
+  if (!obj.id) obj.id = makeId('row');
+  if (!obj.createdAt) obj.createdAt = now();
+  if (!obj.updatedAt) obj.updatedAt = now();
+  return obj;
+}
+
+/** Clears a sheet and writes all rows in a single batch (fast). */
+function writeAll(collection, rows) {
+  var sheet = sheetFor(collection);
+  var headers = COLLECTIONS[collection];
+  var maxRows = sheet.getMaxRows();
+  if (maxRows > 1) {
+    sheet.getRange(2, 1, maxRows - 1, headers.length).clearContent();
+  }
+  if (!rows || !rows.length) return;
+  var values = rows.map(function (r) { return rowForObject(collection, r); });
+  sheet.getRange(2, 1, values.length, headers.length).setValues(values);
+}
+
+function bulkInsert(collection, rows) {
+  rows.forEach(stampRow);
+  writeAll(collection, rows);
+  return rows;
+}
+
+/**
+ * Populates the spreadsheet with realistic demo data. Uses batched writes so
+ * it finishes in a few seconds instead of timing out. Running it again simply
+ * replaces the sample data. Demo user accounts are created only if missing.
+ */
+function seedSampleData() {
+  var firstNames = ['Rahim','Karim','Ayesha','Farida','Jamal','Nusrat','Sabbir','Tanvir','Mitu','Rased','Shakil','Nasrin','Imran','Rubel','Sumaiya','Arif','Hasan','Lima','Nayeem','Parvin','Sohel','Rina','Fahim','Tania','Mizan','Sharmin','Rakib','Jahid','Munia','Omar'];
+  var lastNames = ['Hossain','Ahmed','Islam','Akter','Chowdhury','Rahman','Sarker','Mia'];
+  var designations = ['IT Support Engineer','Senior IT Officer','Network Engineer','System Administrator','Production Supervisor','Machine Operator','HR Executive','Accounts Officer','Quality Inspector','Store Keeper'];
+
+  /* ---- Ticket categories + sub-categories ---- */
+  var categoryDefs = {
+    Hardware: ['Desktop', 'Laptop', 'Monitor', 'Printer', 'Scanner', 'UPS', 'Keyboard/Mouse', 'Other'],
+    Software: ['Windows', 'Microsoft Office', 'Antivirus', 'Application', 'Installation', 'Update', 'Error'],
+    Network: ['Internet', 'LAN', 'Wi-Fi', 'Router', 'Switch', 'Firewall', 'VPN', 'IP Issue'],
+    Email: ['New Account', 'Password Reset', 'Outlook', 'Email Delivery', 'Email Access'],
+    'User Account': ['New User', 'Password Reset', 'Permission', 'Account Lock', 'Account Disable'],
+    Server: ['Server Down', 'Storage', 'Performance', 'Backup', 'Access'],
+    Printer: ['Printing Problem', 'Toner', 'Paper Jam', 'Network Printer', 'Hardware Problem'],
+    CCTV: ['Camera Offline', 'NVR', 'Recording', 'Display', 'Storage'],
+    'Biometric / Access Control': ['Device Offline', 'Fingerprint', 'Attendance Sync', 'Access Issue'],
+    'ERP / Application': ['Login', 'Error', 'Performance', 'Access', 'Integration'],
+    Other: ['General']
+  };
+  var catRows = [];
+  var subRows = [];
+  Object.keys(categoryDefs).forEach(function (name, ci) {
+    var cid = 'cat_' + (ci + 1);
+    catRows.push({ id: cid, name: name, icon: 'CircleHelp', active: true });
+    categoryDefs[name].forEach(function (sub, si) {
+      subRows.push({ id: 'sub_' + (ci + 1) + '_' + (si + 1), categoryId: cid, name: sub, active: true });
+    });
+  });
+  bulkInsert('ticket_categories', catRows);
+  bulkInsert('ticket_subcategories', subRows);
+
+  bulkInsert('sla_rules', [
+    { id: 'sla_1', priority: 'critical', responseHours: 1, resolveHours: 4, active: true },
+    { id: 'sla_2', priority: 'high', responseHours: 2, resolveHours: 8, active: true },
+    { id: 'sla_3', priority: 'medium', responseHours: 4, resolveHours: 24, active: true },
+    { id: 'sla_4', priority: 'low', responseHours: 8, resolveHours: 72, active: true }
+  ]);
+
+  /* ---- Departments ---- */
+  var depDefs = [
+    ['Information Technology', 'IT'], ['Production', 'PROD'], ['HR & Admin', 'HR'],
+    ['Accounts & Finance', 'ACC'], ['Quality Assurance', 'QA'], ['Procurement & Store', 'PRC']
+  ];
+  var depRows = depDefs.map(function (d, i) { return { id: 'dep_' + (i + 1), name: d[0], code: d[1], description: d[0], active: true }; });
+  bulkInsert('departments', depRows);
+  var depIds = depRows.map(function (d) { return d.id; });
+
+  /* ---- Locations ---- */
+  var buildings = [
+    ['Main Building', ['Ground Floor', '1st Floor', '2nd Floor']],
+    ['Production Block A', ['Ground Floor', '1st Floor']],
+    ['Utility Building', ['Ground Floor']]
+  ];
+  var locRows = [];
+  var locSeq = 0;
+  buildings.forEach(function (b) {
+    b[1].forEach(function (fl, fi) {
+      for (var r = 1; r <= 2; r++) {
+        locSeq++;
+        locRows.push({ id: 'loc_' + locSeq, building: b[0], floor: fl, room: 'Room ' + (fi + 1) + '0' + r, departmentId: depIds[(fi + r) % depIds.length], description: b[0] + ' ' + fl, active: true });
+      }
+    });
+  });
+  bulkInsert('locations', locRows);
+
+  /* ---- Employees ---- */
+  var empRows = [];
+  for (var i = 0; i < 30; i++) {
+    empRows.push({
+      id: 'emp_' + (i + 1),
+      employeeId: 'EMP-' + (1001 + i),
+      name: firstNames[i % firstNames.length] + ' ' + lastNames[(i * 3) % lastNames.length],
+      departmentId: depIds[i % depIds.length],
+      designation: designations[i % designations.length],
+      email: firstNames[i % firstNames.length].toLowerCase() + '.' + (i + 1) + '@factory.com',
+      phone: '+88017' + (10000000 + i * 137),
+      locationId: locRows[i % locRows.length].id,
+      status: 'active',
+      joinedAt: isoDay(-(200 + i * 9)),
+      notes: ''
+    });
+  }
+  bulkInsert('employees', empRows);
+
+  /* ---- Vendors ---- */
+  var venDefs = [
+    ['TechSource Ltd.', 'Mahbub Alam', '+8801711000001', 'sales@techsource.com', 'Hardware Supply', 'amc'],
+    ['SoftMart Solutions', 'Nabila Karim', '+8801711000002', 'info@softmart.com', 'Software Supply', 'service_agreement'],
+    ['SecureNet Systems', 'Tanvir Ahmed', '+8801711000003', 'support@securenet.com', 'Network Services', 'amc'],
+    ['ServerWorks BD', 'Rezaul Haque', '+8801711000004', 'care@serverworks.com', 'Server & Storage', 'warranty'],
+    ['VisionEye CCTV', 'Shirin Sultana', '+8801711000005', 'service@visioneye.com', 'CCTV & Security', 'amc']
+  ];
+  var venRows = venDefs.map(function (v, i) {
+    return { id: 'ven_' + (i + 1), name: v[0], contactPerson: v[1], phone: v[2], email: v[3], serviceType: v[4], contractType: v[5], contractStart: isoDay(-300), contractEnd: isoDay(90), address: 'Dhaka, Bangladesh', notes: '' };
+  });
+  bulkInsert('vendors', venRows);
+  var venIds = venRows.map(function (v) { return v.id; });
+
+  /* ---- Assets ---- */
+  var assetTypes = ['Desktop', 'Laptop', 'Monitor', 'Printer', 'Server', 'Switch', 'Router', 'CCTV Camera', 'UPS', 'IP Phone'];
+  var brands = ['HP', 'Dell', 'Lenovo', 'Cisco', 'TP-Link', 'Hikvision', 'APC'];
+  var aStatuses = ['assigned', 'assigned', 'available', 'under_maintenance', 'in_repair'];
+  var assetRows = [];
+  for (var a = 0; a < 30; a++) {
+    var st = aStatuses[a % aStatuses.length];
+    assetRows.push({
+      id: 'ast_' + (a + 1),
+      assetTag: 'AST-2024-' + (1000 + a),
+      typeId: assetTypes[a % assetTypes.length],
+      name: assetTypes[a % assetTypes.length] + ' ' + (a + 1),
+      brand: brands[a % brands.length],
+      model: 'MDL-' + (100 + a),
+      serialNumber: 'SN' + (900000 + a * 37),
+      purchaseDate: isoDay(-(300 + a * 5)),
+      purchaseCost: 15000 + (a % 12) * 8500,
+      vendorId: venIds[a % venIds.length],
+      warrantyStart: isoDay(-(300 + a * 5)),
+      warrantyEnd: (a % 9 === 0) ? isoDay(20 + a) : isoDay(300 + a * 3),
+      locationId: locRows[a % locRows.length].id,
+      building: locRows[a % locRows.length].building,
+      floor: locRows[a % locRows.length].floor,
+      departmentId: depIds[a % depIds.length],
+      assignedEmployeeId: (st === 'assigned') ? empRows[a % empRows.length].id : '',
+      status: st,
+      condition: 'good',
+      notes: ''
+    });
+  }
+  bulkInsert('assets', assetRows);
+
+  /* ---- Network devices ---- */
+  var netDefs = [
+    ['Core Router', 'Router', '192.168.1.1', 'online'], ['Core Switch', 'Switch', '192.168.1.2', 'online'],
+    ['Edge Firewall', 'Firewall', '192.168.1.254', 'online'], ['Wi-Fi AP - Main Lobby', 'Wi-Fi Access Point', '192.168.10.11', 'online'],
+    ['Wi-Fi AP - Production A', 'Wi-Fi Access Point', '192.168.10.12', 'degraded'], ['Access Switch - Floor 1', 'Switch', '192.168.1.21', 'online'],
+    ['Access Switch - Floor 2', 'Switch', '192.168.1.22', 'maintenance'], ['Branch Router', 'Router', '192.168.2.1', 'offline'],
+    ['Server Farm Switch', 'Switch', '10.0.0.2', 'online'], ['Guest Wi-Fi AP - QA', 'Wi-Fi Access Point', '192.168.30.11', 'online']
+  ];
+  bulkInsert('network_devices', netDefs.map(function (d, idx) {
+    return { id: 'net_' + (idx + 1), name: d[0], deviceType: d[1], brand: 'Cisco', model: 'NW-' + idx, ipAddress: d[2], macAddress: 'A4:B1:C2:00:00:' + (10 + idx), vlan: '10', locationId: locRows[idx % locRows.length].id, status: d[3], notes: '' };
+  }));
+
+  /* ---- Servers ---- */
+  var serverDefs = [
+    ['Domain Controller', 'DC01', '10.0.0.10', 'Physical', 'Windows Server 2022', '64 GB'],
+    ['ERP Application Server', 'ERPAPP01', '10.0.0.20', 'Virtual', 'Windows Server 2019', '32 GB'],
+    ['Database Server', 'DBSRV01', '10.0.0.30', 'Physical', 'Ubuntu Server 22.04', '128 GB'],
+    ['File Server', 'FS01', '10.0.0.40', 'Virtual', 'Windows Server 2022', '16 GB'],
+    ['Backup Server', 'BKP01', '10.0.0.50', 'Physical', 'Windows Server 2022', '32 GB']
+  ];
+  var serverRows = serverDefs.map(function (s, idx) {
+    return { id: 'srv_' + (idx + 1), name: s[0], hostname: s[1], ip: s[2], serverType: s[3], virtualization: s[3] === 'Virtual' ? 'VMware ESXi' : 'N/A', os: s[4], cpu: 'Intel Xeon', ram: s[5], storage: '2 TB', locationId: locRows[0].id, status: 'online', ownerId: '', notes: '' };
+  });
+  bulkInsert('servers', serverRows);
+
+  /* ---- Backups ---- */
+  var backupDefs = [
+    ['DC01 System State', 'Full', 'successful'], ['ERP App Daily', 'Incremental', 'successful'],
+    ['Database Full Backup', 'Full', 'warning'], ['File Server Sync', 'Incremental', 'failed'],
+    ['Backup Repository', 'Full', 'successful']
+  ];
+  bulkInsert('backups', backupDefs.map(function (b, idx) {
+    return { id: 'bkp_' + (idx + 1), name: b[0], serverId: serverRows[idx % serverRows.length].id, backupType: b[1], schedule: 'Daily 01:00', lastBackup: isoDay(-1), status: b[2], nextBackup: isoDay(1), storageLocation: 'BKP01', notes: '' };
+  }));
+
+  /* ---- Software ---- */
+  var swDefs = [
+    ['Microsoft Windows 11 Pro', 'oem', 60, 54, ''], ['Microsoft 365 Business', 'subscription', 60, 58, 25],
+    ['Kaspersky Endpoint Security', 'subscription', 80, 72, 60], ['AutoCAD', 'perpetual', 5, 5, ''],
+    ['Veeam Backup & Replication', 'subscription', 10, 6, 120], ['Adobe Acrobat Pro', 'subscription', 15, 15, 15],
+    ['MySQL Server', 'free', 100, 4, ''], ['Tally Prime', 'perpetual', 8, 8, ''],
+    ['AnyDesk Business', 'subscription', 12, 9, 90], ['7-Zip', 'free', 999, 45, '']
+  ];
+  bulkInsert('software', swDefs.map(function (s, idx) {
+    return { id: 'sw_' + (idx + 1), name: s[0], vendorId: venIds[idx % venIds.length], version: 'v1', licenseType: s[1], licenseKey: 'KEY-' + idx, totalLicenses: s[2], usedLicenses: s[3], purchaseDate: isoDay(-200), expiryDate: s[4] ? isoDay(s[4]) : '', notes: '' };
+  }));
+
+  /* ---- Spare parts ---- */
+  var spareDefs = [
+    ['DDR4 8GB RAM', 'SP-RAM-8G', 'RAM', 24, 10, 2600], ['512GB NVMe SSD', 'SP-SSD-512', 'SSD', 8, 10, 6500],
+    ['1TB HDD', 'SP-HDD-1T', 'HDD', 12, 5, 5200], ['USB Keyboard', 'SP-KBD-01', 'Keyboard', 35, 15, 750],
+    ['Optical Mouse', 'SP-MSE-01', 'Mouse', 6, 15, 550], ['Laptop Power Adapter', 'SP-ADP-01', 'Power Adapter', 10, 6, 1800],
+    ['SMPS 500W Power Supply', 'SP-PSU-500', 'Power Supply', 4, 5, 3200], ['Cat6 Network Cable (Box)', 'SP-NET-C6', 'Network Cable', 15, 4, 5500],
+    ['RJ45 Connector (Pack)', 'SP-RJ45-100', 'RJ45 Connector', 3, 5, 400], ['HP 85A Toner Cartridge', 'SP-TNR-85A', 'Printer Toner', 9, 4, 4200]
+  ];
+  var spareRows = spareDefs.map(function (p, idx) {
+    return { id: 'sp_' + (idx + 1), name: p[0], sku: p[1], category: p[2], unit: 'pcs', currentStock: p[3], minimumStock: p[4], unitCost: p[5], location: 'IT Store Room', notes: '' };
+  });
+  bulkInsert('spare_parts', spareRows);
+  bulkInsert('spare_transactions', [
+    { id: 'spt_1', sparePartId: 'sp_1', type: 'in', quantity: 30, note: 'Purchase from vendor', actor: 'setup' },
+    { id: 'spt_2', sparePartId: 'sp_4', type: 'out', quantity: 5, ticketId: 'tkt_008', note: 'Keyboard replacements', actor: 'setup' }
+  ]);
+
+  /* ---- Maintenance ---- */
+  var mTypes = ['preventive', 'corrective', 'repair', 'service'];
+  var mStatus = ['scheduled', 'in_progress', 'completed', 'cancelled'];
+  var mntRows = [];
+  for (var m = 0; m < 10; m++) {
+    mntRows.push({
+      id: 'mnt_' + (m + 1), assetId: 'ast_' + ((m * 2) + 1), maintenanceType: mTypes[m % mTypes.length],
+      scheduledDate: (m % 3 === 0) ? isoDay(3 + m) : isoDay(-(7 + m)),
+      completedDate: (mStatus[m % mStatus.length] === 'completed') ? isoDay(-(7 + m)) : '',
+      technician: empRows[(m + 8) % empRows.length].name, vendorId: (m % 2 === 0) ? venIds[m % venIds.length] : '',
+      cost: 1500 + m * 900, status: mStatus[m % mStatus.length],
+      description: 'Scheduled ' + mTypes[m % mTypes.length] + ' maintenance', findings: '', actionTaken: '', nextMaintenanceDate: isoDay(90 + m * 5)
+    });
+  }
+  bulkInsert('maintenance', mntRows);
+
+  /* ---- Tickets ---- */
+  var titles = ['Laptop not booting after update', 'Cannot connect to factory Wi-Fi', 'RAM upgrade required for design desktop', 'Firewall blocking ERP integration', 'SSD failure on accounts PC', 'Outlook not receiving email', 'Printer toner replacement - Accounts', 'Keyboard not working - Store room', 'CCTV camera offline at gate 2', 'Create email account for new employee', 'Server disk space critical on FS01', 'Biometric device not syncing attendance', 'Monitor flickering - QA lab', 'VPN access request for remote work', 'ERP application throwing errors', 'Password reset for plant manager', 'UPS battery backup failing', 'Network printer not reachable'];
+  var pOptions = ['low', 'medium', 'high', 'critical'];
+  var tStatuses = ['new', 'assigned', 'in_progress', 'pending_user', 'pending_vendor', 'resolved', 'closed', 'reopened'];
+  var slaHours = { critical: 4, high: 8, medium: 24, low: 72 };
+  var officerIds = ['usr_officer', 'usr_officer2'];
+  function subFor(catId) {
+    for (var s = 0; s < subRows.length; s++) { if (subRows[s].categoryId === catId) return subRows[s].id; }
+    return '';
+  }
+  var ticketRows = [];
+  for (var t = 0; t < titles.length; t++) {
+    var cat = catRows[t % catRows.length];
+    var emp = empRows[t % empRows.length];
+    var st2 = tStatuses[t % tStatuses.length];
+    var pri = pOptions[t % pOptions.length];
+    var open = (st2 !== 'new');
+    var resolved = (st2 === 'resolved' || st2 === 'closed') ? isoDay(-(t % 5)) : '';
+    ticketRows.push({
+      id: 'tkt_' + ('00' + (t + 1)).slice(-3),
+      code: 'TK-2024-' + (1000 + t),
+      title: titles[t],
+      description: titles[t] + '. Reported by ' + emp.name + '.',
+      requesterId: emp.id, requesterName: emp.name, employeeId: emp.employeeId,
+      departmentId: emp.departmentId, locationId: emp.locationId,
+      categoryId: cat.id, subcategoryId: subFor(cat.id), priority: pri, status: st2,
+      assignedTo: open ? officerIds[t % officerIds.length] : '',
+      assignedToName: open ? (t % officerIds.length === 0 ? 'IT Officer' : 'IT Manager') : '',
+      dueDate: isoDay((t % 8) - 4), slaHours: slaHours[pri],
+      resolvedAt: resolved, closedAt: (st2 === 'closed') ? resolved : '',
+      resolution: resolved ? 'Issue diagnosed and resolved.' : '',
+      rating: (st2 === 'closed') ? 5 : '', reopenCount: 0
+    });
+  }
+  bulkInsert('tickets', ticketRows);
+
+  /* ---- Notifications ---- */
+  var notifDefs = [
+    ['Critical ticket assigned', 'A critical ticket is open and needs attention.', 'destructive', '/app/tickets'],
+    ['SLA breach risk', 'Some tickets are close to breaching SLA.', 'warning', '/app/tickets'],
+    ['Backup failed', 'A backup job failed — check storage.', 'destructive', '/app/backups'],
+    ['License expiring soon', 'A software license expires within 30 days.', 'warning', '/app/software'],
+    ['Low spare stock', 'Some spare parts are below minimum stock.', 'info', '/app/spare-parts'],
+    ['Warranty expiring', 'Asset warranty expires soon.', 'warning', '/app/assets']
+  ];
+  bulkInsert('notifications', notifDefs.map(function (n, idx) {
+    return { id: 'ntf_' + (idx + 1), title: n[0], description: n[1], timestamp: new Date(new Date().getTime() - idx * 3600000).toISOString(), read: false, tone: n[2], type: 'system', link: n[3] };
+  }));
+
+  /* ---- Demo user accounts (skip if a user with that email already exists) ---- */
+  var demoUsers = [
+    ['System Administrator', 'admin@factory.com', 'super_admin', 'Admin@123'],
+    ['IT Manager', 'manager@factory.com', 'it_manager', 'Manager@123'],
+    ['IT Officer', 'officer@factory.com', 'it_officer', 'Officer@123'],
+    ['IT Officer 2', 'officer2@factory.com', 'it_officer', 'Officer@123'],
+    ['Employee User', 'employee@factory.com', 'employee', 'Employee@123'],
+    ['Management Viewer', 'viewer@factory.com', 'viewer', 'Viewer@123']
+  ];
+  var existing = activeObjects('users');
+  demoUsers.forEach(function (u) {
+    var found = existing.filter(function (x) { return String(x.email).toLowerCase() === u[1]; }).length > 0;
+    if (!found) createUser(u[0], u[1], u[2], u[3]);
+  });
+
+  SpreadsheetApp.getActive().toast('Sample data seeded successfully.');
 }

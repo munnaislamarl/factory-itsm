@@ -3,6 +3,7 @@ import type {
   AssetAction,
   AssetActionPayload,
   DataSource,
+  LookupBundle,
   SpareActionPayload,
   TicketActionPayload,
   TicketTransition,
@@ -176,11 +177,30 @@ class MockDataSource implements DataSource {
     })
   }
 
+  async getLookups(): Promise<LookupBundle> {
+    const bundle = {} as Record<string, AnyRecord[]>
+    const names = [
+      'departments',
+      'locations',
+      'employees',
+      'users',
+      'vendors',
+      'assets',
+      'servers',
+      'software',
+      'spare_parts',
+      'ticket_categories',
+      'ticket_subcategories',
+    ]
+    names.forEach((name) => {
+      bundle[name] = this.active(name)
+    })
+    return bundle as unknown as LookupBundle
+  }
+
   /* ---------------------------------------------------------------- */
   /* Ticket workflow                                                   */
-  /* ---------------------------------------------------------------- */
-
-  async ticketAction(
+  /* ---------------------------------------------------------------- */  async ticketAction(
     action: TicketTransition,
     payload: TicketActionPayload,
     actor: string,

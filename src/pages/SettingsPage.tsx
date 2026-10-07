@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { env } from '@/config/env'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
+import { cacheClear } from '@/services/cache'
 import { isDemoMode } from '@/services/datasource'
 import type { Theme } from '@/hooks/useTheme'
 import { PERMISSIONS, ROLE_PERMISSIONS } from '@/utils/permissions'
@@ -192,6 +193,21 @@ export function SettingsPage() {
                 <Badge variant={env.isApiConfigured ? 'success' : 'muted'}>
                   {env.isApiConfigured ? 'Yes' : 'No'}
                 </Badge>
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <p className="text-xs text-muted-foreground">
+                  Cached data makes navigation instant. Clear it to force a fresh download from Google Sheets.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    cacheClear()
+                    window.location.reload()
+                  }}
+                >
+                  Clear cached data &amp; reload
+                </Button>
               </div>
             </CardContent>
           </Card>

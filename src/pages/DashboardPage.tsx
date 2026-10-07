@@ -114,6 +114,7 @@ export function DashboardPage() {
   const resource = useAsyncResource<DashboardData>(
     () => dataSource.getDashboard({ userId: user?.id, canViewAll }),
     [user?.id, canViewAll],
+    `dashboard:${user?.id ?? 'anon'}:${canViewAll}`,
   )
 
   const data = resource.data

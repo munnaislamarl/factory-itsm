@@ -2,19 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import type { ReactNode } from 'react'
 
 import { dataSource } from '@/services/datasource'
-import type {
-  Asset,
-  Department,
-  Employee,
-  Location,
-  Server,
-  Software,
-  SparePart,
-  TicketCategory,
-  TicketSubcategory,
-  Vendor,
-  AppUser,
-} from '@/types'
+import { cacheGet, cacheSet, CACHE_KEYS } from '@/services/cache'
+import type { LookupBundle } from '@/services/types'
 import type { Option } from '@/utils/constants'
 
 export type LookupSource =
@@ -30,19 +19,7 @@ export type LookupSource =
   | 'ticket_categories'
   | 'ticket_subcategories'
 
-interface LookupState {
-  departments: Department[]
-  locations: Location[]
-  employees: Employee[]
-  users: AppUser[]
-  vendors: Vendor[]
-  assets: Asset[]
-  servers: Server[]
-  software: Software[]
-  spare_parts: SparePart[]
-  ticket_categories: TicketCategory[]
-  ticket_subcategories: TicketSubcategory[]
-}
+export type LookupState = LookupBundle
 
 const EMPTY: LookupState = {
   departments: [],
@@ -69,63 +46,68 @@ interface LookupContextValue {
 
 const LookupContext = createContext<LookupContextValue | null>(null)
 
-function locationLabel(location: Location): string {
+function locationLabel(location: LookupState['locations'][number]): string {
   return [location.building, location.floor, location.room].filter(Boolean).join(' · ')
 }
 
 export function LookupProvider({ children }: { children: ReactNode }) {
-  const [data, setData] = useState<LookupState>(EMPTY)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState<LookupState>(
+    () => cacheGet<LookupState>(CACHE_KEYS.lookups) ?? EMPTY,
+  )
+  const [loading, setLoading] = useState(() => cacheGet(CACHE_KEYS.lookups) === null)
 
   const load = useCallback(async () => {
     try {
-      const [
-        departments,
-        locations,
-        employees,
-        users,
-        vendors,
-        assets,
-        servers,
-        software,
-        spare_parts,
-        ticket_categories,
-        ticket_subcategories,
-      ] = await Promise.all([
-        dataSource.list<Department>('departments'),
-        dataSource.list<Location>('locations'),
-        dataSource.list<Employee>('employees'),
-        dataSource.list<AppUser>('users'),
-        dataSource.list<Vendor>('vendors'),
-        dataSource.list<Asset>('assets'),
-        dataSource.list<Server>('servers'),
-        dataSource.list<Software>('software'),
-        dataSource.list<SparePart>('spare_parts'),
-        dataSource.list<TicketCategory>('ticket_categories'),
-        dataSource.list<TicketSubcategory>('ticket_subcategories'),
-      ])
-      setData({
-        departments,
-        locations,
-        employees,
-        users,
-        vendors,
-        assets,
-        servers,
-        software,
-        spare_parts,
-        ticket_categories,
-        ticket_subcategories,
-      })
+      const bundle = await dataSource.getLookups()
+      const next: LookupState = { ...EMPTY, ...bundle }
+      cacheSet(CACHE_KEYS.lookups, next)
+      setData(next)
     } catch {
-      setData(EMPTY)
+      // Backend may not support the batched action yet — fall back to
+      // individual collection requests so the app keeps working.
+      try {
+        const names = [
+          'departments',
+          'locations',
+          'employees',
+          'users',
+          'vendors',
+          'assets',
+          'servers',
+          'software',
+          'spare_parts',
+          'ticket_categories',
+          'ticket_subcategories',
+        ] as const
+        const results = await Promise.all(names.map((name) => dataSource.list(name)))
+        const next = { ...EMPTY } as unknown as Record<string, unknown>
+        names.forEach((name, index) => {
+          next[name] = results[index]
+        })
+        cacheSet(CACHE_KEYS.lookups, next as unknown as LookupState)
+        setData(next as unknown as LookupState)
+      } catch {
+        // keep whatever is cached so the UI stays usable
+      }
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
+    if (cacheGet(CACHE_KEYS.lookups)) {
+      setLoading(false)
+      return
+    }
     void load()
+  }, [load])
+
+  useEffect(() => {
+    const onFocus = () => {
+      if (!cacheGet(CACHE_KEYS.lookups)) void load()
+    }
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [load])
 
   const maps = useMemo(

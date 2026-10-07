@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 
 import { useAsyncResource } from '@/hooks/useAsyncResource'
+import { cacheClear, CACHE_KEYS, isLookupCollection } from '@/services/cache'
 import { dataSource } from '@/services/datasource'
 import type { CollectionName, QueryOptions } from '@/types'
 
@@ -15,11 +16,19 @@ export interface CollectionApi<T> {
   remove: (id: string, actor: string) => Promise<void>
 }
 
+function invalidate(collection: CollectionName): void {
+  cacheClear(`list:${collection}:`)
+  cacheClear(CACHE_KEYS.dashboard(''))
+  if (isLookupCollection(collection)) cacheClear('lookups:')
+}
+
 export function useCollection<T>(collection: CollectionName, options: QueryOptions = {}): CollectionApi<T> {
-  const depsKey = JSON.stringify(options)
+  const optionsKey = JSON.stringify(options)
+  const cacheKey = CACHE_KEYS.list(collection, optionsKey)
   const resource = useAsyncResource<T[]>(
     () => dataSource.list<T>(collection, options),
-    [collection, depsKey],
+    [collection, optionsKey],
+    cacheKey,
   )
 
   const items = resource.data ?? []
@@ -27,6 +36,7 @@ export function useCollection<T>(collection: CollectionName, options: QueryOptio
   const create = useCallback(
     async (data: Partial<T>, actor: string) => {
       const created = await dataSource.create<T>(collection, data, actor)
+      invalidate(collection)
       resource.setData((prev) => [created, ...(prev ?? [])])
       return created
     },
@@ -36,6 +46,7 @@ export function useCollection<T>(collection: CollectionName, options: QueryOptio
   const update = useCallback(
     async (id: string, patch: Partial<T>, actor: string) => {
       const updated = await dataSource.update<T>(collection, id, patch, actor)
+      invalidate(collection)
       resource.setData((prev) => (prev ?? []).map((item) => ((item as { id: string }).id === id ? updated : item)))
       return updated
     },
@@ -45,6 +56,7 @@ export function useCollection<T>(collection: CollectionName, options: QueryOptio
   const remove = useCallback(
     async (id: string, actor: string) => {
       await dataSource.remove(collection, id, actor)
+      invalidate(collection)
       resource.setData((prev) => (prev ?? []).filter((item) => (item as { id: string }).id !== id))
     },
     [collection, resource],

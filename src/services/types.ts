@@ -3,14 +3,37 @@ import type {
   Asset,
   CollectionName,
   DashboardData,
+  Department,
+  Employee,
+  Location,
   QueryOptions,
   ReportFilter,
   ReportPayload,
+  Server,
   SessionUser,
+  Software,
   SparePart,
   SpareTransaction,
   Ticket,
+  TicketCategory,
+  TicketSubcategory,
+  Vendor,
+  AppUser,
 } from '@/types'
+
+export interface LookupBundle {
+  departments: Department[]
+  locations: Location[]
+  employees: Employee[]
+  users: AppUser[]
+  vendors: Vendor[]
+  assets: Asset[]
+  servers: Server[]
+  software: Software[]
+  spare_parts: SparePart[]
+  ticket_categories: TicketCategory[]
+  ticket_subcategories: TicketSubcategory[]
+}
 
 export type TicketTransition =
   | 'assign'
@@ -64,6 +87,8 @@ export interface DataSource {
   create<T>(collection: CollectionName, data: Partial<T>, actor: string): Promise<T>
   update<T>(collection: CollectionName, id: string, patch: Partial<T>, actor: string): Promise<T>
   remove(collection: CollectionName, id: string, actor: string): Promise<void>
+
+  getLookups(): Promise<LookupBundle>
 
   ticketAction(action: TicketTransition, payload: TicketActionPayload, actor: string): Promise<Ticket>
   rateTicket(ticketId: string, rating: number, comment: string, actor: string): Promise<Ticket>

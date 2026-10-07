@@ -3,6 +3,7 @@ import type {
   AssetAction,
   AssetActionPayload,
   DataSource,
+  LookupBundle,
   SpareActionPayload,
   TicketActionPayload,
   TicketTransition,
@@ -37,6 +38,8 @@ export const remoteDataSource: DataSource = {
   remove: async (collection: CollectionName, id: string, actor: string) => {
     await unwrap<{ id: string }>('delete', { collection, id, actor })
   },
+
+  getLookups: () => unwrap<LookupBundle>('getLookups'),
 
   ticketAction: (action: TicketTransition, payload: TicketActionPayload, actor: string) =>
     unwrap<Ticket>('ticketAction', { transition: action, payload, actor }),
