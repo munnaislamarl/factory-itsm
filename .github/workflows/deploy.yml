@@ -32,9 +32,6 @@ jobs:
 
       - name: Build
         run: npm run build
-        env:
-          VITE_API_URL: ${{ vars.VITE_API_URL }}
-          VITE_API_KEY: ${{ vars.VITE_API_KEY }}
 
       - name: Disable Jekyll
         run: touch dist/.nojekyll
