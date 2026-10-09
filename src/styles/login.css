@@ -11,6 +11,7 @@
   background: radial-gradient(1100px 700px at 26% -10%, #1c2565 0%, #0e1334 45%, #070a1c 100%);
   background-attachment: fixed;
   font-family: Inter, ui-sans-serif, system-ui, "Hind Siliguri", "Segoe UI", sans-serif;
+  line-height: normal;
   color: #fff;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;

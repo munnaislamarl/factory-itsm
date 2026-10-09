@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 
 import { useAuth } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/services/apiClient'
-import { isDemoMode } from '@/services/datasource'
 import '@/styles/login.css'
 
 interface Particle {
@@ -369,9 +368,7 @@ export function LoginPage() {
             <button className="login-btn" type="submit" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
-            <p className="login-hint">
-              {isDemoMode ? 'Demo: admin@factory.com / Admin@123' : 'Use your company account to sign in'}
-            </p>
+            <p className="login-hint">প্রথমবার ডিফল্ট — admin@factory.com / Admin@123</p>
           </form>
         </section>
 
