@@ -339,6 +339,7 @@ export function buildSeed(): SeedStore {
     deviceType: device.deviceType,
     brand: device.brand,
     model: `NW-${200 + index}`,
+    serialNumber: `SN-${1000 + index * 37}`,
     ipAddress: device.ip,
     macAddress: `A4:B1:C2:${String(10 + index).padStart(2, '0')}:D${index}:0${index}`,
     vlan: String(10 * ((index % 3) + 1)),
