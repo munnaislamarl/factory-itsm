@@ -11,6 +11,7 @@ import { SearchInput } from '@/components/common/SearchInput'
 import { StatusBadge } from '@/components/common/StatusBadge'
 import { ResourceFormDialog } from '@/components/resource/ResourceFormDialog'
 import type { FormValues } from '@/components/resource/ResourceFormDialog'
+import { ResourceViewDialog } from '@/components/resource/ResourceViewDialog'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import {
@@ -48,6 +49,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(config.defaultSort?.dir ?? 'desc')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
+  const [viewing, setViewing] = useState<Row | null>(null)
   const [deleting, setDeleting] = useState<Row | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -305,7 +307,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
           onRetry={api.refresh}
           sortBy={sortBy}
           sortDir={sortDir}
-          onRowClick={config.detailRoute ? (row) => navigate(config.detailRoute!(row)) : undefined}
+          onRowClick={config.detailRoute ? (row) => navigate(config.detailRoute!(row)) : (row) => setViewing(row)}
           onSortChange={(key) => {
             if (key === '__actions') return
             if (sortBy === key) setSortDir((prev) => (prev === 'asc' ? 'desc' : 'asc'))
@@ -342,6 +344,15 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
         initial={editing}
         onSubmit={handleSubmit}
         onClone={handleClone}
+      />
+
+      <ResourceViewDialog
+        config={config}
+        open={viewing != null}
+        onOpenChange={(next) => {
+          if (!next) setViewing(null)
+        }}
+        data={viewing}
       />
 
       {deleting ? (
