@@ -1,4 +1,4 @@
-import { Download, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Copy, Download, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -48,6 +48,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(config.defaultSort?.dir ?? 'desc')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
+  const [cloning, setCloning] = useState<Row | null>(null)
   const [deleting, setDeleting] = useState<Row | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -133,19 +134,36 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
     render: (row) => renderCell(column, row),
   }))
 
-  if (canUpdate || canDelete) {
+  if (canUpdate || canDelete || canCreate) {
     columns.push({
       key: '__actions',
       header: '',
       render: (row) => (
         <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
+          {canCreate ? (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="Clone"
+              title="Clone"
+              onClick={() => {
+                setEditing(null)
+                setCloning(row)
+                setDialogOpen(true)
+              }}
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </Button>
+          ) : null}
           {canUpdate ? (
             <Button
               variant="ghost"
               size="icon-sm"
               aria-label="Edit"
+              title="Edit"
               onClick={() => {
                 setEditing(row)
+                setCloning(null)
                 setDialogOpen(true)
               }}
             >
@@ -157,6 +175,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
               variant="ghost"
               size="icon-sm"
               aria-label="Delete"
+              title="Delete"
               className="text-destructive hover:text-destructive"
               onClick={() => setDeleting(row)}
             >
@@ -178,6 +197,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
       toast.success(`${config.singular} created`)
     }
     setEditing(null)
+    setCloning(null)
   }
 
   async function handleDelete() {
@@ -324,9 +344,13 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
         open={dialogOpen}
         onOpenChange={(next) => {
           setDialogOpen(next)
-          if (!next) setEditing(null)
+          if (!next) {
+            setEditing(null)
+            setCloning(null)
+          }
         }}
-        initial={editing}
+        initial={editing ?? cloning}
+        mode={editing ? 'edit' : cloning ? 'clone' : 'create'}
         onSubmit={handleSubmit}
       />
 

@@ -24,6 +24,7 @@ interface ResourceFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial?: Record<string, unknown> | null
+  mode?: 'create' | 'edit' | 'clone'
   onSubmit: (values: FormValues) => Promise<void>
 }
 
@@ -37,12 +38,15 @@ function defaultsFor(config: ResourceConfig): FormValues {
   return values
 }
 
-export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubmit }: ResourceFormDialogProps) {
+export function ResourceFormDialog({ config, open, onOpenChange, initial, mode, onSubmit }: ResourceFormDialogProps) {
   const { optionsFor, subcategoriesFor } = useLookups()
   const [values, setValues] = useState<FormValues>(defaultsFor(config))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+
+  const isEdit = mode === 'edit' || (mode === undefined && Boolean(initial))
+  const isClone = mode === 'clone'
 
   useEffect(() => {
     if (!open) return
@@ -122,7 +126,9 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{initial ? `Edit ${config.singular}` : `New ${config.singular}`}</DialogTitle>
+          <DialogTitle>
+            {isClone ? `Clone ${config.singular}` : isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
+          </DialogTitle>
           <DialogDescription>{config.description}</DialogDescription>
         </DialogHeader>
 
@@ -222,7 +228,7 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
             Cancel
           </Button>
           <Button onClick={handleSubmit} loading={submitting} disabled={submitting}>
-            {initial ? 'Save changes' : `Create ${config.singular}`}
+            {isEdit ? 'Save changes' : isClone ? `Clone ${config.singular}` : `Create ${config.singular}`}
           </Button>
         </DialogFooter>
       </DialogContent>

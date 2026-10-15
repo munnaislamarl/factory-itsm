@@ -221,7 +221,20 @@ function makeId(prefix) {
 /* Generic CRUD                                                        */
 /* ------------------------------------------------------------------ */
 
+/** Self-heal rows that were imported without an ID so edits target the right row. */
+function ensureIds(collection) {
+  var rows = readObjects(collection);
+  var missing = rows.filter(function (r) { return !String(r.id || '').trim(); });
+  if (!missing.length) return;
+  for (var i = 0; i < missing.length; i++) {
+    var clean = stripMeta(missing[i]);
+    clean.id = makeId(collection.slice(0, 3));
+    writeObject(collection, missing[i].__row, clean);
+  }
+}
+
 function listCollection(collection, options) {
+  ensureIds(collection);
   var rows = activeObjects(collection);
   if (options.filters) {
     rows = rows.filter(function (row) {
