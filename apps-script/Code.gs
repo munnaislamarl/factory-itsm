@@ -221,15 +221,21 @@ function makeId(prefix) {
 /* Generic CRUD                                                        */
 /* ------------------------------------------------------------------ */
 
-/** Self-heal rows that were imported without an ID so edits target the right row. */
+/** Self-heal rows that were imported without an ID so edits target the right row.
+ *  Called automatically from listCollection(); can also be run manually with no
+ *  argument to repair every collection at once. */
 function ensureIds(collection) {
-  var rows = readObjects(collection);
-  var missing = rows.filter(function (r) { return !String(r.id || '').trim(); });
-  if (!missing.length) return;
-  for (var i = 0; i < missing.length; i++) {
-    var clean = stripMeta(missing[i]);
-    clean.id = makeId(collection.slice(0, 3));
-    writeObject(collection, missing[i].__row, clean);
+  var names = collection ? [collection] : Object.keys(COLLECTIONS);
+  for (var n = 0; n < names.length; n++) {
+    var name = names[n];
+    var rows = readObjects(name);
+    var missing = rows.filter(function (r) { return !String(r.id || '').trim(); });
+    if (!missing.length) continue;
+    for (var i = 0; i < missing.length; i++) {
+      var clean = stripMeta(missing[i]);
+      clean.id = makeId(name.slice(0, 3));
+      writeObject(name, missing[i].__row, clean);
+    }
   }
 }
 
