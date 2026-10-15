@@ -242,15 +242,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     ],
     fields: [
       { name: 'name', label: 'Device Name', type: 'text', required: true },
-      { name: 'deviceType', label: 'Device Type', type: 'select', required: true, options: [
-        { value: 'Router', label: 'Router' },
-        { value: 'Switch', label: 'Switch' },
-        { value: 'Firewall', label: 'Firewall' },
-        { value: 'Wi-Fi Access Point', label: 'Wi-Fi Access Point' },
-        { value: 'Modem', label: 'Modem' },
-        { value: 'Load Balancer', label: 'Load Balancer' },
-        { value: 'Other', label: 'Other' },
-      ] },
+      { name: 'deviceType', label: 'Device Type', type: 'select', required: true, optionsFrom: 'device_types' },
       { name: 'brand', label: 'Brand', type: 'text' },
       { name: 'model', label: 'Model', type: 'text' },
       { name: 'ipAddress', label: 'IP Address', type: 'text', placeholder: '192.168.1.1' },
@@ -262,12 +254,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'notes', label: 'Notes', type: 'textarea', full: true },
     ],
     filters: [
-      { name: 'deviceType', label: 'Type', options: [
-        { value: 'Router', label: 'Router' },
-        { value: 'Switch', label: 'Switch' },
-        { value: 'Firewall', label: 'Firewall' },
-        { value: 'Wi-Fi Access Point', label: 'Wi-Fi Access Point' },
-      ] },
+      { name: 'deviceType', label: 'Type', optionsFrom: 'device_types' },
       { name: 'status', label: 'Status', options: DEVICE_STATUSES },
     ],
   },
@@ -550,5 +537,23 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'active', label: 'Active', type: 'checkbox', defaultValue: true },
     ],
     filters: [{ name: 'categoryId', label: 'Category', optionsFrom: 'ticket_categories' }],
+  },
+
+  'device-types': {
+    key: 'device-types',
+    collection: 'device_types',
+    title: 'Device Types',
+    singular: 'Device Type',
+    description: 'Network device types available in the Network module.',
+    icon: Network,
+    permissions: { view: 'settings.view', create: 'lookup.manage', update: 'lookup.manage', delete: 'lookup.manage' },
+    columns: [
+      { key: 'name', header: 'Device Type' },
+      { key: 'active', header: 'Active', kind: 'boolean' },
+    ],
+    fields: [
+      { name: 'name', label: 'Device Type Name', type: 'text', required: true },
+      { name: 'active', label: 'Active', type: 'checkbox', defaultValue: true },
+    ],
   },
 }

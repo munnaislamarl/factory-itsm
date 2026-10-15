@@ -6,6 +6,7 @@ import type {
   CollectionName,
   DashboardData,
   Department,
+  DeviceType,
   Employee,
   Location,
   QueryOptions,
@@ -36,6 +37,7 @@ export interface LookupBundle {
   spare_parts: SparePart[]
   ticket_categories: TicketCategory[]
   ticket_subcategories: TicketSubcategory[]
+  device_types: DeviceType[]
 }
 
 export type TicketTransition =

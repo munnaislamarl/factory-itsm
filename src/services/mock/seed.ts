@@ -10,6 +10,7 @@ import type {
   AssetTransfer,
   Backup,
   Department,
+  DeviceType,
   Employee,
   IpAddress,
   ItDocument,
@@ -39,6 +40,7 @@ export interface SeedStore {
   employees: Employee[]
   ticket_categories: TicketCategory[]
   ticket_subcategories: TicketSubcategory[]
+  device_types: DeviceType[]
   tickets: Ticket[]
   ticket_comments: TicketComment[]
   ticket_worklogs: TicketWorkLog[]
@@ -192,6 +194,17 @@ export function buildSeed(): SeedStore {
       })
     })
   })
+
+  /* Device types ----------------------------------------------------- */
+  const device_types: DeviceType[] = [
+    'Router', 'Switch', 'Firewall', 'Wi-Fi Access Point', 'Modem', 'Load Balancer', 'Other',
+  ].map((name, index) => ({
+    id: `dtype_${index + 1}`,
+    name,
+    active: true,
+    createdAt: daysFromNow(-390),
+    updatedAt: daysFromNow(-390),
+  }))
 
   /* Users ------------------------------------------------------------ */
   const users: AppUser[] = [
@@ -588,6 +601,7 @@ export function buildSeed(): SeedStore {
     employees,
     ticket_categories,
     ticket_subcategories,
+    device_types,
     tickets,
     ticket_comments,
     ticket_worklogs,

@@ -18,6 +18,7 @@ export type LookupSource =
   | 'spare_parts'
   | 'ticket_categories'
   | 'ticket_subcategories'
+  | 'device_types'
 
 export type LookupState = LookupBundle
 
@@ -33,6 +34,7 @@ const EMPTY: LookupState = {
   spare_parts: [],
   ticket_categories: [],
   ticket_subcategories: [],
+  device_types: [],
 }
 
 interface LookupContextValue {
@@ -89,6 +91,7 @@ export function LookupProvider({ children }: { children: ReactNode }) {
           'spare_parts',
           'ticket_categories',
           'ticket_subcategories',
+          'device_types',
         ] as const
         const results = await Promise.all(names.map((name) => dataSource.list(name)))
         const bundle: Record<string, unknown[]> = {}
@@ -135,6 +138,7 @@ export function LookupProvider({ children }: { children: ReactNode }) {
       spare_parts: new Map(data.spare_parts.map((item) => [item.id, item.name])),
       ticket_categories: new Map(data.ticket_categories.map((item) => [item.id, item.name])),
       ticket_subcategories: new Map(data.ticket_subcategories.map((item) => [item.id, item.name])),
+      device_types: new Map(data.device_types.map((item) => [item.id, item.name])),
     }),
     [data],
   )
@@ -152,6 +156,7 @@ export function LookupProvider({ children }: { children: ReactNode }) {
       spare_parts: data.spare_parts.map((item) => ({ value: item.id, label: `${item.name} (${item.sku})` })),
       ticket_categories: data.ticket_categories.map((item) => ({ value: item.id, label: item.name })),
       ticket_subcategories: data.ticket_subcategories.map((item) => ({ value: item.id, label: item.name })),
+      device_types: data.device_types.map((item) => ({ value: item.name, label: item.name })),
     }),
     [data],
   )

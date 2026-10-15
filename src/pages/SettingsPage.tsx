@@ -168,6 +168,7 @@ export function SettingsPage() {
               <Button variant="outline" onClick={() => navigate('/app/ticket-subcategories')}>Ticket Sub-categories</Button>
               <Button variant="outline" onClick={() => navigate('/app/departments')}>Departments</Button>
               <Button variant="outline" onClick={() => navigate('/app/locations')}>Locations</Button>
+              <Button variant="outline" onClick={() => navigate('/app/device-types')}>Device Types</Button>
               <Button variant="outline" onClick={() => navigate('/app/users')}>Users</Button>
             </CardContent>
           </Card>

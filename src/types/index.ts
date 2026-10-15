@@ -129,6 +129,11 @@ export interface TicketSubcategory extends BaseRecord {
   active: boolean
 }
 
+export interface DeviceType extends BaseRecord {
+  name: string
+  active: boolean
+}
+
 export interface Ticket extends BaseRecord {
   code: string
   title: string
@@ -499,6 +504,7 @@ export type CollectionName =
   | 'employees'
   | 'ticket_categories'
   | 'ticket_subcategories'
+  | 'device_types'
   | 'tickets'
   | 'ticket_comments'
   | 'ticket_worklogs'

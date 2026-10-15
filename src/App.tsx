@@ -38,6 +38,7 @@ const DocumentsPage = lazy(() => resourcePages().then((m) => ({ default: m.Docum
 const UsersPage = lazy(() => resourcePages().then((m) => ({ default: m.UsersPage })))
 const TicketCategoriesPage = lazy(() => resourcePages().then((m) => ({ default: m.TicketCategoriesPage })))
 const TicketSubcategoriesPage = lazy(() => resourcePages().then((m) => ({ default: m.TicketSubcategoriesPage })))
+const DeviceTypesPage = lazy(() => resourcePages().then((m) => ({ default: m.DeviceTypesPage })))
 const AssetsPage = lazy(() => resourcePages().then((m) => ({ default: m.AssetsPage })))
 
 function RouteFallback() {
@@ -96,6 +97,7 @@ export default function App() {
                       <Route path="access-requests" element={guard('users.manage', <AccessRequestsPage />)} />
                       <Route path="ticket-categories" element={guard('settings.view', <TicketCategoriesPage />)} />
                       <Route path="ticket-subcategories" element={guard('settings.view', <TicketSubcategoriesPage />)} />
+                      <Route path="device-types" element={guard('settings.view', <DeviceTypesPage />)} />
                       <Route path="settings" element={guard('settings.view', <SettingsPage />)} />
                     </Route>
                   </Route>

@@ -40,6 +40,9 @@ export function TicketCategoriesPage() {
 export function TicketSubcategoriesPage() {
   return <ResourcePage config={RESOURCES['ticket-subcategories']} />
 }
+export function DeviceTypesPage() {
+  return <ResourcePage config={RESOURCES['device-types']} />
+}
 export function AssetsPage() {
   return <ResourcePage config={RESOURCES.assets} />
 }

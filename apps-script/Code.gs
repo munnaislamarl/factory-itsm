@@ -26,6 +26,7 @@ var COLLECTIONS = {
   employees: ['ID','EMPLOYEE_ID','NAME','DEPARTMENT_ID','DESIGNATION','EMAIL','PHONE','LOCATION_ID','STATUS','JOINED_AT','NOTES','CREATED_AT','UPDATED_AT','DELETED_AT'],
   ticket_categories: ['ID','NAME','ICON','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
   ticket_subcategories: ['ID','CATEGORY_ID','NAME','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
+  device_types: ['ID','NAME','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
   tickets: ['ID','CODE','TITLE','DESCRIPTION','REQUESTER_ID','REQUESTER_NAME','EMPLOYEE_ID','DEPARTMENT_ID','LOCATION_ID','CATEGORY_ID','SUBCATEGORY_ID','PRIORITY','STATUS','ASSIGNED_TO','ASSIGNED_TO_NAME','DUE_DATE','SLA_HOURS','RESOLVED_AT','CLOSED_AT','RESOLUTION','RATING','RATING_COMMENT','FIRST_RESPONSE_AT','REOPEN_COUNT','CREATED_AT','UPDATED_AT','DELETED_AT'],
   ticket_comments: ['ID','TICKET_ID','AUTHOR_ID','AUTHOR_NAME','BODY','INTERNAL','CREATED_AT','UPDATED_AT','DELETED_AT'],
   ticket_worklogs: ['ID','TICKET_ID','OFFICER_ID','OFFICER_NAME','MINUTES','NOTE','CREATED_AT','UPDATED_AT','DELETED_AT'],
@@ -741,7 +742,7 @@ function mapById(list) {
  * avoids a dozen slow Apps Script calls on every page load.
  */
 function getLookups() {
-  var names = ['departments', 'locations', 'employees', 'users', 'vendors', 'assets', 'servers', 'software', 'spare_parts', 'ticket_categories', 'ticket_subcategories'];
+  var names = ['departments', 'locations', 'employees', 'users', 'vendors', 'assets', 'servers', 'software', 'spare_parts', 'ticket_categories', 'ticket_subcategories', 'device_types'];
   var result = {};
   names.forEach(function (name) {
     result[name] = activeObjects(name).map(stripMeta);
@@ -904,6 +905,12 @@ function seedReferenceData() {
   if (activeObjects('sla_rules').length === 0) {
     [['critical', 1, 4], ['high', 2, 8], ['medium', 4, 24], ['low', 8, 72]].forEach(function (rule) {
       createRecord('sla_rules', { id: makeId('sla'), priority: rule[0], responseHours: rule[1], resolveHours: rule[2], active: true }, 'setup');
+    });
+  }
+
+  if (activeObjects('device_types').length === 0) {
+    ['Router', 'Switch', 'Firewall', 'Wi-Fi Access Point', 'Modem', 'Load Balancer', 'Other'].forEach(function (name) {
+      createRecord('device_types', { id: makeId('dtype'), name: name, active: true }, 'setup');
     });
   }
 

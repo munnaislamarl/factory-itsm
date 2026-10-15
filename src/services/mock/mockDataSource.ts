@@ -216,6 +216,7 @@ class MockDataSource implements DataSource {
       'spare_parts',
       'ticket_categories',
       'ticket_subcategories',
+      'device_types',
     ]
     names.forEach((name) => {
       bundle[name] = this.active(name)
