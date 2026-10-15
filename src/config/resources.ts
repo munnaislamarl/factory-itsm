@@ -279,11 +279,12 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     defaultFilters: { deviceType: 'Camera' },
     columns: [
       { key: 'name', header: 'Camera' },
+      { key: 'brand', header: 'Brand' },
+      { key: 'model', header: 'Model' },
       { key: 'assetCode', header: 'Asset Code' },
       { key: 'ipAddress', header: 'IP Address' },
       { key: 'macAddress', header: 'MAC / Old IP' },
       { key: 'serialNumber', header: 'Serial No' },
-      { key: 'status', header: 'Status', kind: 'badge', options: DEVICE_STATUSES, tones: DEVICE_STATUS_TONES },
     ],
     fields: [
       { name: 'name', label: 'Camera Name', type: 'text', required: true },
