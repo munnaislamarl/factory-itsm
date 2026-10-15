@@ -321,35 +321,42 @@ export function buildSeed(): SeedStore {
   ]
 
   /* Network ---------------------------------------------------------- */
-  const network_device_seeds: { name: string; deviceType: string; brand: string; ip: string; status: string }[] = [
-    { name: 'Core Router', deviceType: 'Router', brand: 'MikroTik', ip: '192.168.1.1', status: 'online' },
-    { name: 'Core Switch', deviceType: 'Switch', brand: 'Cisco', ip: '192.168.1.2', status: 'online' },
-    { name: 'Edge Firewall', deviceType: 'Firewall', brand: 'Fortinet', ip: '192.168.1.254', status: 'online' },
-    { name: 'Wi-Fi AP - Main Lobby', deviceType: 'Wi-Fi Access Point', brand: 'Ubiquiti', ip: '192.168.10.11', status: 'online' },
-    { name: 'Wi-Fi AP - Production A', deviceType: 'Wi-Fi Access Point', brand: 'Ubiquiti', ip: '192.168.10.12', status: 'degraded' },
-    { name: 'Access Switch - Floor 1', deviceType: 'Switch', brand: 'TP-Link', ip: '192.168.1.21', status: 'online' },
-    { name: 'Access Switch - Floor 2', deviceType: 'Switch', brand: 'TP-Link', ip: '192.168.1.22', status: 'maintenance' },
-    { name: 'Branch Router', deviceType: 'Router', brand: 'Cisco', ip: '192.168.2.1', status: 'offline' },
-    { name: 'Server Farm Switch', deviceType: 'Switch', brand: 'Cisco', ip: '10.0.0.2', status: 'online' },
-    { name: 'Guest Wi-Fi AP - QA', deviceType: 'Wi-Fi Access Point', brand: 'TP-Link', ip: '192.168.30.11', status: 'online' },
-  ]
-  const network_devices: NetworkDevice[] = network_device_seeds.map((device, index) => ({
-    id: `net_${index + 1}`,
-    name: device.name,
-    deviceType: device.deviceType,
-    brand: device.brand,
-    model: `NW-${200 + index}`,
-    serialNumber: `SN-${1000 + index * 37}`,
-    ipAddress: device.ip,
-    macAddress: `A4:B1:C2:${String(10 + index).padStart(2, '0')}:D${index}:0${index}`,
-    vlan: String(10 * ((index % 3) + 1)),
-    isp: device.deviceType === 'Router' ? 'Link3 Technologies' : undefined,
-    locationId: locations[index % locations.length].id,
-    status: device.status,
-    notes: '',
-    createdAt: daysFromNow(-200),
-    updatedAt: daysFromNow(-index),
-  }))
+  const network_type_names = ['Router', 'Switch', 'Firewall', 'Wi-Fi Access Point', 'Modem', 'Load Balancer', 'Other']
+  const network_brands: Record<string, string[]> = {
+    Router: ['Cisco', 'MikroTik', 'Huawei'],
+    Switch: ['Cisco', 'TP-Link', 'D-Link'],
+    Firewall: ['Fortinet', 'Sophos', 'Cisco'],
+    'Wi-Fi Access Point': ['Ubiquiti', 'TP-Link', 'Cisco'],
+    Modem: ['Huawei', 'ZTE', 'TP-Link'],
+    'Load Balancer': ['F5', 'Citrix', 'HAProxy'],
+    Other: ['Generic'],
+  }
+  const network_roles = ['Core', 'Edge', 'Access', 'Distribution', 'Branch', 'Guest', 'Server Farm', 'Campus', 'HQ', 'Remote']
+  const network_statuses = ['online', 'online', 'online', 'online', 'degraded', 'maintenance', 'offline']
+  const network_devices: NetworkDevice[] = []
+  for (let i = 0; i < 100; i += 1) {
+    const type = network_type_names[i % network_type_names.length]
+    const brands = network_brands[type] ?? ['Generic']
+    const brand = brands[i % brands.length]
+    const role = network_roles[i % network_roles.length]
+    network_devices.push({
+      id: `net_${i + 1}`,
+      name: `${role} ${type}`,
+      deviceType: type,
+      brand,
+      model: `NW-${200 + i}`,
+      serialNumber: `SN-${1000 + i * 37}`,
+      ipAddress: `192.168.${Math.floor(i / 250) + 1}.${(i % 250) + 1}`,
+      macAddress: `A4:B1:C2:${String(i % 256).padStart(2, '0')}:D${i % 10}:${String(i % 16).padStart(2, '0')}`,
+      vlan: String(10 * ((i % 3) + 1)),
+      isp: type === 'Router' ? 'Link3 Technologies' : undefined,
+      locationId: locations[i % locations.length].id,
+      status: network_statuses[i % network_statuses.length],
+      notes: '',
+      createdAt: daysFromNow(-(200 + i)),
+      updatedAt: daysFromNow(-(i % 60)),
+    })
+  }
 
   const ip_addresses: IpAddress[] = []
   for (let i = 0; i < 20; i += 1) {
