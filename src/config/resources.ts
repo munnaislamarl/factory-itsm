@@ -237,6 +237,8 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     columns: [
       { key: 'name', header: 'Device' },
       { key: 'deviceType', header: 'Type' },
+      { key: 'model', header: 'Model' },
+      { key: 'serialNumber', header: 'Serial No', kind: 'code' },
       { key: 'ipAddress', header: 'IP Address', kind: 'code' },
       { key: 'macAddress', header: 'MAC', kind: 'code', hideBelow: 'lg' },
       { key: 'locationId', header: 'Location', kind: 'ref', ref: 'locations', hideBelow: 'md' },
