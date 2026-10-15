@@ -1,4 +1,4 @@
-import { Copy, Download, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Download, Pencil, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
@@ -48,7 +48,6 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(config.defaultSort?.dir ?? 'desc')
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Row | null>(null)
-  const [cloning, setCloning] = useState<Row | null>(null)
   const [deleting, setDeleting] = useState<Row | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -134,27 +133,12 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
     render: (row) => renderCell(column, row),
   }))
 
-  if (canUpdate || canDelete || canCreate) {
+  if (canUpdate || canDelete) {
     columns.push({
       key: '__actions',
       header: '',
       render: (row) => (
         <div className="flex items-center justify-end gap-1" onClick={(event) => event.stopPropagation()}>
-          {canCreate ? (
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              aria-label="Clone"
-              title="Clone"
-              onClick={() => {
-                setEditing(null)
-                setCloning(row)
-                setDialogOpen(true)
-              }}
-            >
-              <Copy className="h-3.5 w-3.5" />
-            </Button>
-          ) : null}
           {canUpdate ? (
             <Button
               variant="ghost"
@@ -163,7 +147,6 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
               title="Edit"
               onClick={() => {
                 setEditing(row)
-                setCloning(null)
                 setDialogOpen(true)
               }}
             >
@@ -197,7 +180,13 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
       toast.success(`${config.singular} created`)
     }
     setEditing(null)
-    setCloning(null)
+  }
+
+  async function handleClone(values: FormValues) {
+    const actor = user?.name ?? 'system'
+    await api.create(values, actor)
+    toast.success(`${config.singular} cloned`)
+    setEditing(null)
   }
 
   async function handleDelete() {
@@ -344,14 +333,11 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
         open={dialogOpen}
         onOpenChange={(next) => {
           setDialogOpen(next)
-          if (!next) {
-            setEditing(null)
-            setCloning(null)
-          }
+          if (!next) setEditing(null)
         }}
-        initial={editing ?? cloning}
-        mode={editing ? 'edit' : cloning ? 'clone' : 'create'}
+        initial={editing}
         onSubmit={handleSubmit}
+        onClone={handleClone}
       />
 
       {deleting ? (

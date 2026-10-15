@@ -24,8 +24,8 @@ interface ResourceFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   initial?: Record<string, unknown> | null
-  mode?: 'create' | 'edit' | 'clone'
   onSubmit: (values: FormValues) => Promise<void>
+  onClone?: (values: FormValues) => Promise<void>
 }
 
 function defaultsFor(config: ResourceConfig): FormValues {
@@ -38,15 +38,14 @@ function defaultsFor(config: ResourceConfig): FormValues {
   return values
 }
 
-export function ResourceFormDialog({ config, open, onOpenChange, initial, mode, onSubmit }: ResourceFormDialogProps) {
+export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubmit, onClone }: ResourceFormDialogProps) {
   const { optionsFor, subcategoriesFor } = useLookups()
   const [values, setValues] = useState<FormValues>(defaultsFor(config))
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
 
-  const isEdit = mode === 'edit' || (mode === undefined && Boolean(initial))
-  const isClone = mode === 'clone'
+  const isEdit = Boolean(initial)
 
   useEffect(() => {
     if (!open) return
@@ -102,18 +101,36 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, mode, 
     return Object.keys(next).length === 0
   }
 
+  function buildPayload(): FormValues {
+    const payload: FormValues = {}
+    config.fields.forEach((field) => {
+      const value = values[field.name]
+      if (field.type === 'number') payload[field.name] = value === '' || value == null ? undefined : Number(value)
+      else payload[field.name] = value
+    })
+    return payload
+  }
+
   async function handleSubmit() {
     if (!validate()) return
     setSubmitting(true)
     setFormError(null)
     try {
-      const payload: FormValues = {}
-      config.fields.forEach((field) => {
-        const value = values[field.name]
-        if (field.type === 'number') payload[field.name] = value === '' || value == null ? undefined : Number(value)
-        else payload[field.name] = value
-      })
-      await onSubmit(payload)
+      await onSubmit(buildPayload())
+      onOpenChange(false)
+    } catch (error) {
+      setFormError(getErrorMessage(error))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleClone() {
+    if (!validate()) return
+    setSubmitting(true)
+    setFormError(null)
+    try {
+      await onClone?.(buildPayload())
       onOpenChange(false)
     } catch (error) {
       setFormError(getErrorMessage(error))
@@ -127,7 +144,7 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, mode, 
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isClone ? `Clone ${config.singular}` : isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
+            {isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
           </DialogTitle>
           <DialogDescription>{config.description}</DialogDescription>
         </DialogHeader>
@@ -227,8 +244,13 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, mode, 
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
+          {isEdit && onClone ? (
+            <Button variant="outline" onClick={handleClone} loading={submitting} disabled={submitting}>
+              Clone
+            </Button>
+          ) : null}
           <Button onClick={handleSubmit} loading={submitting} disabled={submitting}>
-            {isEdit ? 'Save changes' : isClone ? `Clone ${config.singular}` : `Create ${config.singular}`}
+            {isEdit ? 'Save changes' : `Create ${config.singular}`}
           </Button>
         </DialogFooter>
       </DialogContent>
