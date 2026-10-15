@@ -104,6 +104,7 @@ function route(action, body) {
     case 'getLookups': return getLookups();
     case 'getDashboard': return getDashboard(body.scope || {});
     case 'getReport': return getReport(body.report, body.filter || {});
+    case 'replaceNetworkDevices': return replaceNetworkDevices(body.devices || []);
     default: throw new Error('Unknown action: ' + action);
   }
 }
@@ -329,6 +330,40 @@ function deleteRecord(collection, id, actor) {
   writeObject(collection, row.__row, updated);
   logActivity(collection + '.deleted', collection, id, actor, 'Deleted ' + collection + ' record');
   return { id: id };
+}
+
+/** Replace the entire network_devices list with the provided array (bulk import). */
+function replaceNetworkDevices(devices) {
+  var collection = 'network_devices';
+  var sheet = sheetFor(collection);
+  var headers = COLLECTIONS[collection];
+  sheet.clear();
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]).setFontWeight('bold').setBackground('#eef2f7');
+  sheet.setFrozenRows(1);
+  var list = Array.isArray(devices) ? devices : [];
+  for (var i = 0; i < list.length; i++) {
+    var d = list[i] || {};
+    appendObject(collection, {
+      id: makeId('net'),
+      name: String(d.name || '').trim(),
+      deviceType: String(d.deviceType || '').trim(),
+      brand: String(d.brand || '').trim(),
+      model: String(d.model || '').trim(),
+      serialNumber: String(d.serialNumber || '').trim(),
+      ipAddress: String(d.ipAddress || '').trim(),
+      macAddress: String(d.macAddress || '').trim(),
+      vlan: '',
+      isp: '',
+      locationId: '',
+      assetId: '',
+      status: d.status ? String(d.status) : 'online',
+      notes: String(d.notes || '').trim(),
+      createdAt: now(),
+      updatedAt: now(),
+      deletedAt: ''
+    });
+  }
+  return { count: list.length };
 }
 
 function logActivity(action, entityType, entityId, actor, detail, oldValue, newValue) {
