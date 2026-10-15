@@ -78,6 +78,7 @@ function mapDevice(row) {
     brand: val(8),
     model: val(9),
     serialNumber: val(12),
+    assetCode: val(3),
     ipAddress: val(6),
     macAddress: val(7),
     notes: val(13),
