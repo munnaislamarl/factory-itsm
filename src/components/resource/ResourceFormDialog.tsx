@@ -44,8 +44,7 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-
-  const isEdit = Boolean(initial)
+  const [mode, setMode] = useState<'create' | 'edit' | 'clone'>('create')
 
   useEffect(() => {
     if (!open) return
@@ -56,8 +55,10 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
         base[field.name] = value ?? base[field.name]
       })
       setValues(base)
+      setMode('edit')
     } else {
       setValues(defaultsFor(config))
+      setMode('create')
     }
     setErrors({})
     setFormError(null)
@@ -125,7 +126,7 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
     }
   }
 
-  async function handleClone() {
+  async function handleCloneSubmit() {
     if (!validate()) return
     setSubmitting(true)
     setFormError(null)
@@ -144,7 +145,7 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {isEdit ? `Edit ${config.singular}` : `New ${config.singular}`}
+            {mode === 'edit' ? `Edit ${config.singular}` : `New ${config.singular}`}
           </DialogTitle>
           <DialogDescription>{config.description}</DialogDescription>
         </DialogHeader>
@@ -244,13 +245,13 @@ export function ResourceFormDialog({ config, open, onOpenChange, initial, onSubm
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          {isEdit && onClone ? (
-            <Button variant="outline" onClick={handleClone} loading={submitting} disabled={submitting}>
+          {mode === 'edit' && onClone ? (
+            <Button variant="outline" onClick={() => setMode('clone')} disabled={submitting}>
               Clone
             </Button>
           ) : null}
-          <Button onClick={handleSubmit} loading={submitting} disabled={submitting}>
-            {isEdit ? 'Save changes' : `Create ${config.singular}`}
+          <Button onClick={mode === 'clone' ? handleCloneSubmit : handleSubmit} loading={submitting} disabled={submitting}>
+            {mode === 'edit' ? 'Save changes' : mode === 'clone' ? 'Add' : `Create ${config.singular}`}
           </Button>
         </DialogFooter>
       </DialogContent>
