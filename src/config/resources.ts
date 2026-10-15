@@ -1,6 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   Building2,
+  Camera,
   Cpu,
   FileText,
   HardHat,
@@ -92,6 +93,7 @@ export interface ResourceConfig {
   filters?: FilterConfig[]
   defaultSort?: { by: string; dir: 'asc' | 'desc' }
   defaultPageSize?: number
+  defaultFilters?: Record<string, string>
   searchable?: string[]
   detailRoute?: (row: Record<string, unknown>) => string
 }
@@ -262,6 +264,40 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'deviceType', label: 'Type', optionsFrom: 'device_types' },
       { name: 'status', label: 'Status', options: DEVICE_STATUSES },
     ],
+  },
+
+  cameras: {
+    key: 'cameras',
+    collection: 'network_devices',
+    title: 'Cameras',
+    singular: 'Camera',
+    description: 'CCTV cameras and their locations.',
+    icon: Camera,
+    permissions: { view: 'network.view', create: 'network.manage', update: 'network.manage', delete: 'network.manage' },
+    defaultPageSize: 100,
+    defaultFilters: { deviceType: 'Camera' },
+    columns: [
+      { key: 'name', header: 'Camera' },
+      { key: 'assetCode', header: 'Asset Code' },
+      { key: 'ipAddress', header: 'IP Address' },
+      { key: 'macAddress', header: 'MAC / Old IP' },
+      { key: 'serialNumber', header: 'Serial No' },
+      { key: 'status', header: 'Status', kind: 'badge', options: DEVICE_STATUSES, tones: DEVICE_STATUS_TONES },
+    ],
+    fields: [
+      { name: 'name', label: 'Camera Name', type: 'text', required: true },
+      { name: 'deviceType', label: 'Device Type', type: 'select', required: true, defaultValue: 'Camera', options: [{ value: 'Camera', label: 'Camera' }] },
+      { name: 'brand', label: 'Brand', type: 'text' },
+      { name: 'model', label: 'Model', type: 'text' },
+      { name: 'serialNumber', label: 'Serial No', type: 'text' },
+      { name: 'assetCode', label: 'Asset Code', type: 'text' },
+      { name: 'ipAddress', label: 'IP Address', type: 'text' },
+      { name: 'macAddress', label: 'MAC / Old IP', type: 'text' },
+      { name: 'locationId', label: 'Location', type: 'select', optionsFrom: 'locations' },
+      { name: 'status', label: 'Status', type: 'select', options: DEVICE_STATUSES, defaultValue: 'online' },
+      { name: 'notes', label: 'Notes', type: 'textarea', full: true },
+    ],
+    filters: [{ name: 'status', label: 'Status', options: DEVICE_STATUSES }],
   },
 
   servers: {

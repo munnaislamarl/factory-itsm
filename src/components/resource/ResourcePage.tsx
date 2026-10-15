@@ -37,7 +37,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
   const { can, user } = useAuth()
   const navigate = useNavigate()
   const { nameFor, optionsFor } = useLookups()
-  const api = useCollection<Row>(config.collection)
+  const api = useCollection<Row>(config.collection, { filters: config.defaultFilters })
 
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebounce(search, 250)

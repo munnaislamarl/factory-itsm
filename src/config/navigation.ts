@@ -3,6 +3,7 @@ import {
   Activity,
   Bell,
   Building2,
+  Camera,
   Cpu,
   FileText,
   HardHat,
@@ -57,6 +58,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'Infrastructure',
     items: [
       { to: '/app/network', label: 'Network', icon: Network, permission: 'network.view' },
+      { to: '/app/cameras', label: 'Cameras', icon: Camera, permission: 'network.view' },
       { to: '/app/servers', label: 'Servers', icon: Server, permission: 'servers.view' },
       { to: '/app/backups', label: 'Backups', icon: HardHat, permission: 'servers.view' },
       { to: '/app/software', label: 'Software & Licenses', icon: ShieldCheck, permission: 'software.view' },

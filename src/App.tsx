@@ -29,6 +29,7 @@ const EmployeesPage = lazy(() => resourcePages().then((m) => ({ default: m.Emplo
 const DepartmentsPage = lazy(() => resourcePages().then((m) => ({ default: m.DepartmentsPage })))
 const LocationsPage = lazy(() => resourcePages().then((m) => ({ default: m.LocationsPage })))
 const NetworkPage = lazy(() => resourcePages().then((m) => ({ default: m.NetworkPage })))
+const CamerasPage = lazy(() => resourcePages().then((m) => ({ default: m.CamerasPage })))
 const ServersPage = lazy(() => resourcePages().then((m) => ({ default: m.ServersPage })))
 const BackupsPage = lazy(() => resourcePages().then((m) => ({ default: m.BackupsPage })))
 const SoftwarePage = lazy(() => resourcePages().then((m) => ({ default: m.SoftwarePage })))
@@ -83,6 +84,7 @@ export default function App() {
                       <Route path="maintenance" element={guard('maintenance.view', <MaintenancePage />)} />
                       <Route path="spare-parts" element={guard('spares.view', <SparePartsPage />)} />
                       <Route path="network" element={guard('network.view', <NetworkPage />)} />
+                      <Route path="cameras" element={guard('network.view', <CamerasPage />)} />
                       <Route path="servers" element={guard('servers.view', <ServersPage />)} />
                       <Route path="backups" element={guard('servers.view', <BackupsPage />)} />
                       <Route path="software" element={guard('software.view', <SoftwarePage />)} />

@@ -13,6 +13,9 @@ export function LocationsPage() {
 export function NetworkPage() {
   return <ResourcePage config={RESOURCES.network} />
 }
+export function CamerasPage() {
+  return <ResourcePage config={RESOURCES.cameras} />
+}
 export function ServersPage() {
   return <ResourcePage config={RESOURCES.servers} />
 }
