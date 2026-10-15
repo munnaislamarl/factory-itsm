@@ -35,8 +35,8 @@ export function DashboardLayout() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar onMenuClick={() => setMobileOpen(true)} />
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-[1400px]">
+        <main className="flex-1 px-3 py-5 sm:px-4 lg:px-5">
+          <div className="w-full">
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
