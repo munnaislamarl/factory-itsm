@@ -270,6 +270,8 @@ export interface NetworkDevice extends BaseRecord {
   model?: string
   serialNumber?: string
   assetCode?: string
+  username?: string
+  password?: string
   ipAddress?: string
   macAddress?: string
   vlan?: string
