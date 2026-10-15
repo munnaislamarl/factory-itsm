@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 
+import { RequestAccessDialog } from '@/components/auth/RequestAccessDialog'
 import { useAuth } from '@/hooks/useAuth'
 import { getErrorMessage } from '@/services/apiClient'
 import '@/styles/login.css'
@@ -284,6 +285,7 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [requestOpen, setRequestOpen] = useState(false)
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault()
@@ -378,7 +380,10 @@ export function LoginPage() {
             <button className="login-btn" type="submit" disabled={loading}>
               {loading ? 'Signing in…' : 'Sign in'}
             </button>
-            <p className="login-hint">প্রথমবার ডিফল্ট — admin@factory.com / Admin@123</p>
+
+            <button type="button" className="login-request" onClick={() => setRequestOpen(true)}>
+              Request access
+            </button>
           </form>
         </div>
 
@@ -387,6 +392,8 @@ export function LoginPage() {
           <span>&copy; 2026 Factory ITSM. All Rights Reserved.</span>
         </p>
       </div>
+
+      <RequestAccessDialog open={requestOpen} onOpenChange={setRequestOpen} />
     </div>
   )
 }

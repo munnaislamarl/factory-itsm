@@ -9,6 +9,8 @@ import type {
   TicketTransition,
 } from '@/services/types'
 import type {
+  AccessRequest,
+  AccessRequestInput,
   ActivityLogEntry,
   Asset,
   CollectionName,
@@ -16,6 +18,7 @@ import type {
   QueryOptions,
   ReportFilter,
   ReportPayload,
+  Role,
   SessionUser,
   SparePart,
   SpareTransaction,
@@ -52,6 +55,14 @@ export const remoteDataSource: DataSource = {
 
   authenticate: (identifier: string, password: string) =>
     unwrap<SessionUser>('authenticate', { identifier, password }),
+  requestAccess: (input: AccessRequestInput) =>
+    unwrap<AccessRequest>('requestAccess', { data: input }),
+  listAccessRequests: () => unwrap<AccessRequest[]>('listAccessRequests'),
+  approveAccessRequest: (id: string, role: Role, actor: string) =>
+    unwrap<SessionUser>('approveAccessRequest', { id, role, actor }),
+  rejectAccessRequest: async (id: string, actor: string) => {
+    await unwrap<{ id: string }>('rejectAccessRequest', { id, actor })
+  },
   listActivity: () => unwrap<ActivityLogEntry[]>('listActivity'),
   getDashboard: (scope: { userId?: string; canViewAll: boolean }) =>
     unwrap<DashboardData>('getDashboard', { scope }),

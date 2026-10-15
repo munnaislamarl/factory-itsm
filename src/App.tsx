@@ -21,6 +21,7 @@ const AssetDetailPage = lazy(() => import('@/pages/AssetDetailPage').then((m) =>
 const SparePartsPage = lazy(() => import('@/pages/SparePartsPage').then((m) => ({ default: m.SparePartsPage })))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
+const AccessRequestsPage = lazy(() => import('@/pages/AccessRequestsPage').then((m) => ({ default: m.AccessRequestsPage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const resourcePages = () => import('@/pages/resourcePages')
 
@@ -92,6 +93,7 @@ export default function App() {
                       <Route path="reports" element={guard('reports.view', <ReportsPage />)} />
                       <Route path="notifications" element={guard('notifications.view', <NotificationsPage />)} />
                       <Route path="users" element={guard('users.manage', <UsersPage />)} />
+                      <Route path="access-requests" element={guard('users.manage', <AccessRequestsPage />)} />
                       <Route path="ticket-categories" element={guard('settings.view', <TicketCategoriesPage />)} />
                       <Route path="ticket-subcategories" element={guard('settings.view', <TicketSubcategoriesPage />)} />
                       <Route path="settings" element={guard('settings.view', <SettingsPage />)} />

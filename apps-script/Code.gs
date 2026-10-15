@@ -20,6 +20,7 @@
 
 var COLLECTIONS = {
   users: ['ID','NAME','EMAIL','ROLE','EMPLOYEE_ID','DEPARTMENT_ID','DEPARTMENT','ACTIVE','PASSWORD_HASH','PASSWORD_SALT','CREATED_AT','LAST_LOGIN','DELETED_AT'],
+  access_requests: ['ID','NAME','EMAIL','PASSWORD_HASH','PASSWORD_SALT','ROLE','NOTE','STATUS','DECIDED_BY','DECIDED_AT','CREATED_AT','UPDATED_AT','DELETED_AT'],
   departments: ['ID','NAME','CODE','HEAD_EMPLOYEE_ID','BUILDING_ID','DESCRIPTION','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
   locations: ['ID','BUILDING','FLOOR','ROOM','DEPARTMENT_ID','DESCRIPTION','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
   employees: ['ID','EMPLOYEE_ID','NAME','DEPARTMENT_ID','DESIGNATION','EMAIL','PHONE','LOCATION_ID','STATUS','JOINED_AT','NOTES','CREATED_AT','UPDATED_AT','DELETED_AT'],
@@ -94,6 +95,10 @@ function route(action, body) {
     case 'assetAction': return assetAction(body.op, body.payload, body.actor);
     case 'spareAction': return spareAction(body.payload, body.actor);
     case 'authenticate': return authenticate(body.identifier, body.password);
+    case 'requestAccess': return requestAccess(body.data || {});
+    case 'listAccessRequests': return listAccessRequests();
+    case 'approveAccessRequest': return approveAccessRequest(body.id, body.role, body.actor);
+    case 'rejectAccessRequest': return rejectAccessRequest(body.id, body.actor);
     case 'listActivity': return readObjects('activity').slice(0, 60);
     case 'getLookups': return getLookups();
     case 'getDashboard': return getDashboard(body.scope || {});
@@ -348,6 +353,85 @@ function createUser(name, email, role, password, employeeId, department) {
     department: department || '', departmentId: '', active: true,
     passwordSalt: salt, passwordHash: hashPassword(password, salt)
   }, 'system');
+}
+
+/* Access requests ------------------------------------------------- */
+
+function requestAccess(data) {
+  var name = String((data && data.name) || '').trim();
+  var email = String((data && data.email) || '').trim().toLowerCase();
+  var password = String((data && data.password) == null ? '' : data.password);
+  var note = String((data && data.note) || '').trim();
+  if (!name || !email || !password) throw new Error('Name, email and password are required.');
+
+  var existing = activeObjects('users').filter(function (u) { return String(u.email).toLowerCase() === email; });
+  if (existing.length) throw new Error('An account with this email already exists.');
+
+  var pending = activeObjects('access_requests').filter(function (r) {
+    return r.status === 'pending' && String(r.email).toLowerCase() === email;
+  });
+  if (pending.length) throw new Error('A request for this email is already pending.');
+
+  var salt = Utilities.getUuid();
+  var req = appendObject('access_requests', {
+    id: makeId('req'), name: name, email: email,
+    passwordHash: hashPassword(password, salt), passwordSalt: salt,
+    role: 'employee', note: note, status: 'pending',
+    decidedBy: '', decidedAt: '', createdAt: now(), updatedAt: now()
+  });
+  logActivity('access_request.requested', 'access_requests', req.id, name, 'Access requested for ' + email);
+  return { id: req.id, name: name, email: email, role: 'employee', note: note, status: 'pending', createdAt: req.createdAt };
+}
+
+function listAccessRequests() {
+  var rows = activeObjects('access_requests');
+  rows.sort(function (a, b) { return String(b.createdAt || '').localeCompare(String(a.createdAt || '')); });
+  return rows.map(function (r) {
+    return {
+      id: r.id, name: r.name, email: r.email, role: r.role, note: r.note,
+      status: r.status, decidedBy: r.decidedBy, decidedAt: r.decidedAt, createdAt: r.createdAt
+    };
+  });
+}
+
+function approveAccessRequest(id, role, actor) {
+  var req = findRow('access_requests', id);
+  if (!req || String(req.status) !== 'pending') throw new Error('Access request not found.');
+  var email = String(req.email).toLowerCase();
+
+  var existing = activeObjects('users').filter(function (u) { return String(u.email).toLowerCase() === email; });
+  if (existing.length) throw new Error('A user with this email already exists.');
+
+  var roles = ['super_admin', 'it_manager', 'it_officer', 'employee', 'viewer'];
+  var newRole = roles.indexOf(role) >= 0 ? role : 'employee';
+
+  var user = createRecord('users', {
+    id: makeId('usr'), name: req.name, email: email, role: newRole,
+    employeeId: '', departmentId: '', department: '', active: true,
+    passwordSalt: req.passwordSalt || '', passwordHash: req.passwordHash || '',
+    lastLogin: ''
+  }, actor || 'system');
+
+  req.status = 'approved';
+  req.role = newRole;
+  req.decidedBy = actor || 'system';
+  req.decidedAt = now();
+  req.updatedAt = now();
+  writeObject('access_requests', req.__row, req);
+  logActivity('access_request.approved', 'access_requests', id, actor, 'Approved access for ' + email);
+  return { id: user.id, name: user.name, email: user.email, role: user.role };
+}
+
+function rejectAccessRequest(id, actor) {
+  var req = findRow('access_requests', id);
+  if (!req || String(req.status) !== 'pending') throw new Error('Access request not found.');
+  req.status = 'rejected';
+  req.decidedBy = actor || 'system';
+  req.decidedAt = now();
+  req.updatedAt = now();
+  writeObject('access_requests', req.__row, req);
+  logActivity('access_request.rejected', 'access_requests', id, actor, 'Rejected access for ' + req.email);
+  return { id: id };
 }
 
 /* ------------------------------------------------------------------ */

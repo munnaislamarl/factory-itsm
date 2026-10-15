@@ -208,11 +208,25 @@
   cursor: default;
 }
 
-.login-hint {
-  font-size: 12px;
-  color: #9ca3af;
-  text-align: center;
+.login-request {
+  display: block;
+  width: 100%;
   margin: 12px 0 0;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: #283090;
+  cursor: pointer;
+  text-align: center;
+  transition: color 0.15s ease;
+}
+
+.login-request:hover {
+  color: #232a79;
+  text-decoration: underline;
 }
 
 .login-footer {

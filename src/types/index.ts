@@ -59,6 +59,25 @@ export interface AuthSession {
   issuedAt: string
 }
 
+export type AccessRequestStatus = 'pending' | 'approved' | 'rejected'
+
+export interface AccessRequest extends BaseRecord {
+  name: string
+  email: string
+  role: Role
+  note?: string
+  status: AccessRequestStatus
+  decidedBy?: string
+  decidedAt?: string
+}
+
+export interface AccessRequestInput {
+  name: string
+  email: string
+  password: string
+  note?: string
+}
+
 /* ------------------------------------------------------------------ */
 /* Organisation                                                        */
 /* ------------------------------------------------------------------ */

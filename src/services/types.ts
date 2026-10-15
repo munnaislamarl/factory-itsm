@@ -1,4 +1,6 @@
 import type {
+  AccessRequest,
+  AccessRequestInput,
   ActivityLogEntry,
   Asset,
   CollectionName,
@@ -9,6 +11,7 @@ import type {
   QueryOptions,
   ReportFilter,
   ReportPayload,
+  Role,
   Server,
   SessionUser,
   Software,
@@ -99,6 +102,10 @@ export interface DataSource {
   ): Promise<{ part: SparePart; transaction: SpareTransaction }>
 
   authenticate(identifier: string, password: string): Promise<SessionUser>
+  requestAccess(input: AccessRequestInput): Promise<AccessRequest>
+  listAccessRequests(): Promise<AccessRequest[]>
+  approveAccessRequest(id: string, role: Role, actor: string): Promise<SessionUser>
+  rejectAccessRequest(id: string, actor: string): Promise<void>
   listActivity(): Promise<ActivityLogEntry[]>
   getDashboard(scope: { userId?: string; canViewAll: boolean }): Promise<DashboardData>
   getReport(report: string, filter: ReportFilter): Promise<ReportPayload>

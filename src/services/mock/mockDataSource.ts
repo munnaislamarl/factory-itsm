@@ -9,6 +9,8 @@ import type {
   TicketTransition,
 } from '@/services/types'
 import type {
+  AccessRequest,
+  AccessRequestInput,
   ActivityLogEntry,
   Asset,
   CollectionName,
@@ -16,6 +18,7 @@ import type {
   QueryOptions,
   ReportFilter,
   ReportPayload,
+  Role,
   SessionUser,
   SparePart,
   SpareTransaction,
@@ -40,9 +43,11 @@ const DEMO_CREDENTIALS: Record<string, string> = {
 
 class MockDataSource implements DataSource {
   private store: Record<string, AnyRecord[]>
+  private credentials: Record<string, string>
 
   constructor() {
     this.store = buildSeed() as unknown as Record<string, AnyRecord[]>
+    this.credentials = { ...DEMO_CREDENTIALS }
   }
 
   private table(collection: string): AnyRecord[] {
@@ -485,7 +490,7 @@ class MockDataSource implements DataSource {
         String(item.employeeId ?? '').toLowerCase() === key,
     )
     if (!user) throw new Error('No account found for that email or employee ID.')
-    const expected = DEMO_CREDENTIALS[String(user.email).toLowerCase()]
+    const expected = this.credentials[String(user.email).toLowerCase()]
     if (!expected || expected !== password) {
       throw new Error('Incorrect password. Please try again.')
     }
@@ -499,6 +504,135 @@ class MockDataSource implements DataSource {
       departmentId: user.departmentId as string | undefined,
       department: user.department as string | undefined,
     }
+  }
+
+  async requestAccess(input: AccessRequestInput): Promise<AccessRequest> {
+    const email = input.email.trim().toLowerCase()
+    const name = input.name.trim()
+    const password = input.password
+    if (!name || !email || !password) {
+      throw new Error('Name, email and password are required.')
+    }
+    const exists = this.table('users').some(
+      (u) => !u.deletedAt && String(u.email).toLowerCase() === email,
+    )
+    if (exists) throw new Error('An account with this email already exists.')
+    const pending = this.table('access_requests').some(
+      (r) => !r.deletedAt && r.status === 'pending' && String(r.email).toLowerCase() === email,
+    )
+    if (pending) throw new Error('A request for this email is already pending.')
+
+    const record: AnyRecord = {
+      id: generateId('req'),
+      name,
+      email,
+      password,
+      role: 'employee',
+      note: input.note?.trim() ?? '',
+      status: 'pending',
+      createdAt: now(),
+      updatedAt: now(),
+    }
+    this.table('access_requests').unshift(record)
+    this.activity({
+      action: 'access_request.requested',
+      entityType: 'access_requests',
+      entityId: String(record.id),
+      actor: name,
+      detail: `Access requested for ${email}`,
+      timestamp: now(),
+    })
+    return {
+      id: String(record.id),
+      name,
+      email,
+      role: 'employee' as Role,
+      note: String(record.note ?? ''),
+      status: 'pending',
+      createdAt: String(record.createdAt),
+    }
+  }
+
+  async listAccessRequests(): Promise<AccessRequest[]> {
+    const rows = this.table('access_requests')
+      .filter((r) => !r.deletedAt)
+      .sort((a, b) => String(b.createdAt ?? '').localeCompare(String(a.createdAt ?? '')))
+    return rows.map((r) => ({
+      id: String(r.id),
+      name: String(r.name),
+      email: String(r.email),
+      role: (r.role as Role) ?? 'employee',
+      note: r.note ? String(r.note) : undefined,
+      status: (r.status as AccessRequest['status']) ?? 'pending',
+      decidedBy: r.decidedBy ? String(r.decidedBy) : undefined,
+      decidedAt: r.decidedAt ? String(r.decidedAt) : undefined,
+      createdAt: r.createdAt ? String(r.createdAt) : undefined,
+      updatedAt: r.updatedAt ? String(r.updatedAt) : undefined,
+    })) as AccessRequest[]
+  }
+
+  async approveAccessRequest(id: string, role: Role, actor: string): Promise<SessionUser> {
+    const req = this.table('access_requests').find(
+      (r) => r.id === id && r.status === 'pending' && !r.deletedAt,
+    )
+    if (!req) throw new Error('Access request not found.')
+    const email = String(req.email).toLowerCase()
+    const exists = this.table('users').some(
+      (u) => !u.deletedAt && String(u.email).toLowerCase() === email,
+    )
+    if (exists) throw new Error('A user with this email already exists.')
+
+    const user: AnyRecord = {
+      id: generateId('usr'),
+      name: String(req.name),
+      email,
+      role,
+      active: true,
+      lastLogin: '',
+      createdAt: now(),
+      updatedAt: now(),
+    }
+    this.table('users').unshift(user)
+    this.credentials[email] = String(req.password)
+
+    req.status = 'approved'
+    req.role = role
+    req.decidedBy = actor
+    req.decidedAt = now()
+    req.updatedAt = now()
+    this.activity({
+      action: 'access_request.approved',
+      entityType: 'access_requests',
+      entityId: id,
+      actor,
+      detail: `Approved access for ${email}`,
+      timestamp: now(),
+    })
+    return {
+      id: String(user.id),
+      name: String(user.name),
+      email: String(user.email),
+      role: role as SessionUser['role'],
+    }
+  }
+
+  async rejectAccessRequest(id: string, actor: string): Promise<void> {
+    const req = this.table('access_requests').find(
+      (r) => r.id === id && r.status === 'pending' && !r.deletedAt,
+    )
+    if (!req) throw new Error('Access request not found.')
+    req.status = 'rejected'
+    req.decidedBy = actor
+    req.decidedAt = now()
+    req.updatedAt = now()
+    this.activity({
+      action: 'access_request.rejected',
+      entityType: 'access_requests',
+      entityId: id,
+      actor,
+      detail: `Rejected access for ${String(req.email)}`,
+      timestamp: now(),
+    })
   }
 
   async listActivity(): Promise<ActivityLogEntry[]> {
