@@ -91,6 +91,7 @@ export interface ResourceConfig {
   fields: FieldConfig[]
   filters?: FilterConfig[]
   defaultSort?: { by: string; dir: 'asc' | 'desc' }
+  defaultPageSize?: number
   searchable?: string[]
   detailRoute?: (row: Record<string, unknown>) => string
 }
@@ -232,6 +233,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     description: 'Routers, switches, firewalls and wireless access points.',
     icon: Network,
     permissions: { view: 'network.view', create: 'network.manage', update: 'network.manage', delete: 'network.manage' },
+    defaultPageSize: 100,
     columns: [
       { key: 'name', header: 'Device' },
       { key: 'deviceType', header: 'Type' },

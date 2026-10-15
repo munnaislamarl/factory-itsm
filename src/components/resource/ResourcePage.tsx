@@ -43,7 +43,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
   const debouncedSearch = useDebounce(search, 250)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
+  const [pageSize, setPageSize] = useState(config.defaultPageSize ?? 10)
   const [sortBy, setSortBy] = useState<string | undefined>(config.defaultSort?.by)
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>(config.defaultSort?.dir ?? 'desc')
   const [dialogOpen, setDialogOpen] = useState(false)
