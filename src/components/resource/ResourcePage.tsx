@@ -64,6 +64,10 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
 
   const filtered = useMemo(() => {
     let rows = api.items.slice()
+    Object.entries(config.defaultNotFilters ?? {}).forEach(([key, value]) => {
+      if (!value) return
+      rows = rows.filter((row) => String(row[key] ?? '') !== value)
+    })
     const term = debouncedSearch.trim().toLowerCase()
     if (term) {
       const keys = config.searchable
@@ -89,7 +93,7 @@ export function ResourcePage({ config }: { config: ResourceConfig }) {
       })
     }
     return rows
-  }, [api.items, debouncedSearch, filters, sortBy, sortDir, config.searchable])
+  }, [api.items, debouncedSearch, filters, sortBy, sortDir, config.searchable, config.defaultNotFilters])
 
   const total = filtered.length
   const paged = filtered.slice((page - 1) * pageSize, (page - 1) * pageSize + pageSize)

@@ -94,6 +94,7 @@ export interface ResourceConfig {
   defaultSort?: { by: string; dir: 'asc' | 'desc' }
   defaultPageSize?: number
   defaultFilters?: Record<string, string>
+  defaultNotFilters?: Record<string, string>
   searchable?: string[]
   detailRoute?: (row: Record<string, unknown>) => string
 }
@@ -236,6 +237,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     icon: Network,
     permissions: { view: 'network.view', create: 'network.manage', update: 'network.manage', delete: 'network.manage' },
     defaultPageSize: 100,
+    defaultNotFilters: { deviceType: 'Camera' },
     columns: [
       { key: 'name', header: 'Device' },
       { key: 'deviceType', header: 'Type' },
@@ -245,7 +247,6 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { key: 'ipAddress', header: 'IP Address' },
       { key: 'macAddress', header: 'MAC', hideBelow: 'lg' },
       { key: 'locationId', header: 'Location', kind: 'ref', ref: 'locations', hideBelow: 'md' },
-      { key: 'status', header: 'Status', kind: 'badge', options: DEVICE_STATUSES, tones: DEVICE_STATUS_TONES },
     ],
     fields: [
       { name: 'name', label: 'Device Name', type: 'text', required: true },
