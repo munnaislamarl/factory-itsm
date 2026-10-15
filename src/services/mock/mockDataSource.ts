@@ -117,9 +117,17 @@ class MockDataSource implements DataSource {
   }
 
   async create<T>(collection: CollectionName, data: Partial<T>, actor: string): Promise<T> {
+    const raw: AnyRecord = { ...(data as AnyRecord) }
+    if (collection === 'users') {
+      const email = String(raw.email ?? '').trim().toLowerCase()
+      const password = raw.password != null ? String(raw.password) : ''
+      if (!password) throw new Error('Password is required for a new user.')
+      this.credentials[email] = password
+      delete raw.password
+    }
     const record: AnyRecord = {
       id: (data as AnyRecord).id ?? generateId(collection.slice(0, 3)),
-      ...(data as AnyRecord),
+      ...raw,
       createdAt: now(),
       updatedAt: now(),
     }
@@ -138,8 +146,20 @@ class MockDataSource implements DataSource {
   async update<T>(collection: CollectionName, id: string, patch: Partial<T>, actor: string): Promise<T> {
     const row = this.table(collection).find((item) => item.id === id)
     if (!row) throw new Error(`${collection} record not found`)
+    const patchObj = patch as AnyRecord
+    if (collection === 'users') {
+      const oldEmail = String(row.email ?? '').trim().toLowerCase()
+      const newEmail = patchObj.email != null ? String(patchObj.email).trim().toLowerCase() : oldEmail
+      if (patchObj.password != null && String(patchObj.password) !== '') {
+        this.credentials[newEmail] = String(patchObj.password)
+      } else if (oldEmail && newEmail !== oldEmail) {
+        this.credentials[newEmail] = this.credentials[oldEmail] ?? ''
+        delete this.credentials[oldEmail]
+      }
+      delete patchObj.password
+    }
     const before = { ...row }
-    Object.assign(row, patch, { updatedAt: now() })
+    Object.assign(row, patchObj, { updatedAt: now() })
 
     if (collection === 'tickets') {
       Object.entries(patch as AnyRecord).forEach(([key, value]) => {

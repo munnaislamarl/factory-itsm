@@ -264,6 +264,14 @@ function getRecord(collection, id) {
 
 function createRecord(collection, data, actor) {
   var record = data || {};
+  if (collection === 'users') {
+    var pw = String(record.password == null ? '' : record.password);
+    if (!pw) throw new Error('Password is required for a new user.');
+    var salt = Utilities.getUuid();
+    record.passwordSalt = salt;
+    record.passwordHash = hashPassword(pw, salt);
+    delete record.password;
+  }
   if (!record.id) record.id = makeId(collection.slice(0, 3));
   record.createdAt = now();
   record.updatedAt = now();
@@ -277,6 +285,15 @@ function updateRecord(collection, id, patch, actor) {
   if (!row) throw new Error(collection + ' record not found');
   var updated = stripMeta(row);
   for (var key in patch) { updated[key] = patch[key]; }
+  if (collection === 'users') {
+    var pw = String(patch.password == null ? '' : patch.password);
+    if (pw) {
+      var salt = Utilities.getUuid();
+      updated.passwordSalt = salt;
+      updated.passwordHash = hashPassword(pw, salt);
+    }
+    delete updated.password;
+  }
   updated.updatedAt = now();
   writeObject(collection, row.__row, updated);
   logActivity(collection + '.updated', collection, id, actor, 'Updated ' + collection + ' record');
