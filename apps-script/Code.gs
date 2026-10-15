@@ -105,6 +105,7 @@ function route(action, body) {
     case 'getDashboard': return getDashboard(body.scope || {});
     case 'getReport': return getReport(body.report, body.filter || {});
     case 'replaceNetworkDevices': return replaceNetworkDevices(body.devices || []);
+    case 'dumpSheet': return dumpSheet_(body.collection);
     default: throw new Error('Unknown action: ' + action);
   }
 }
@@ -330,6 +331,18 @@ function deleteRecord(collection, id, actor) {
   writeObject(collection, row.__row, updated);
   logActivity(collection + '.deleted', collection, id, actor, 'Deleted ' + collection + ' record');
   return { id: id };
+}
+
+/** Diagnostic: read the raw header + first few rows of a collection. */
+function dumpSheet_(collection) {
+  var sheet = sheetFor(collection);
+  var lastRow = sheet.getLastRow();
+  var lastCol = sheet.getLastColumn();
+  if (lastRow === 0) return { lastRow: 0, lastCol: 0, header: [], rows: [] };
+  var header = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  var n = Math.min(3, lastRow - 1);
+  var rows = n > 0 ? sheet.getRange(2, 1, n, lastCol).getValues() : [];
+  return { lastRow: lastRow, lastCol: lastCol, header: header, rows: rows };
 }
 
 /** Replace the entire network_devices list with the provided array (bulk import). */
