@@ -34,9 +34,6 @@ export function VendorsPage() {
 export function DocumentsPage() {
   return <ResourcePage config={RESOURCES.documents} />
 }
-export function UsersPage() {
-  return <ResourcePage config={RESOURCES.users} />
-}
 export function TicketCategoriesPage() {
   return <ResourcePage config={RESOURCES['ticket-categories']} />
 }

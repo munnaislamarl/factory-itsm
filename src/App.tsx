@@ -21,7 +21,7 @@ const AssetDetailPage = lazy(() => import('@/pages/AssetDetailPage').then((m) =>
 const SparePartsPage = lazy(() => import('@/pages/SparePartsPage').then((m) => ({ default: m.SparePartsPage })))
 const ReportsPage = lazy(() => import('@/pages/ReportsPage').then((m) => ({ default: m.ReportsPage })))
 const NotificationsPage = lazy(() => import('@/pages/NotificationsPage').then((m) => ({ default: m.NotificationsPage })))
-const AccessRequestsPage = lazy(() => import('@/pages/AccessRequestsPage').then((m) => ({ default: m.AccessRequestsPage })))
+const UsersPage = lazy(() => import('@/pages/UsersPage').then((m) => ({ default: m.UsersPage })))
 const SettingsPage = lazy(() => import('@/pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
 const resourcePages = () => import('@/pages/resourcePages')
 
@@ -36,7 +36,6 @@ const SoftwarePage = lazy(() => resourcePages().then((m) => ({ default: m.Softwa
 const MaintenancePage = lazy(() => resourcePages().then((m) => ({ default: m.MaintenancePage })))
 const VendorsPage = lazy(() => resourcePages().then((m) => ({ default: m.VendorsPage })))
 const DocumentsPage = lazy(() => resourcePages().then((m) => ({ default: m.DocumentsPage })))
-const UsersPage = lazy(() => resourcePages().then((m) => ({ default: m.UsersPage })))
 const TicketCategoriesPage = lazy(() => resourcePages().then((m) => ({ default: m.TicketCategoriesPage })))
 const TicketSubcategoriesPage = lazy(() => resourcePages().then((m) => ({ default: m.TicketSubcategoriesPage })))
 const DeviceTypesPage = lazy(() => resourcePages().then((m) => ({ default: m.DeviceTypesPage })))
@@ -96,7 +95,6 @@ export default function App() {
                       <Route path="reports" element={guard('reports.view', <ReportsPage />)} />
                       <Route path="notifications" element={guard('notifications.view', <NotificationsPage />)} />
                       <Route path="users" element={guard('users.manage', <UsersPage />)} />
-                      <Route path="access-requests" element={guard('users.manage', <AccessRequestsPage />)} />
                       <Route path="ticket-categories" element={guard('settings.view', <TicketCategoriesPage />)} />
                       <Route path="ticket-subcategories" element={guard('settings.view', <TicketSubcategoriesPage />)} />
                       <Route path="device-types" element={guard('settings.view', <DeviceTypesPage />)} />

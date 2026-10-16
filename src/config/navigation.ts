@@ -17,7 +17,6 @@ import {
   Settings,
   ShieldCheck,
   UserCog,
-  UserPlus,
   Users,
   Wrench,
 } from 'lucide-react'
@@ -89,7 +88,6 @@ export const NAV_GROUPS: NavGroup[] = [
     label: 'System',
     items: [
       { to: '/app/users', label: 'Users', icon: UserCog, permission: 'users.manage' },
-      { to: '/app/access-requests', label: 'Access Requests', icon: UserPlus, permission: 'users.manage' },
       { to: '/app/settings', label: 'Settings', icon: Settings, permission: 'settings.view' },
     ],
   },
