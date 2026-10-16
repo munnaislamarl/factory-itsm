@@ -64,17 +64,17 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'Organisation',
+    label: 'Register',
     items: [
       { to: '/app/employees', label: 'Employees', icon: Users, permission: 'employees.view' },
       { to: '/app/departments', label: 'Departments', icon: Building2, permission: 'employees.view' },
       { to: '/app/locations', label: 'Locations', icon: MapPin, permission: 'employees.view' },
+      { to: '/app/vendors', label: 'Vendors', icon: ReceiptText, permission: 'vendors.view' },
     ],
   },
   {
     label: 'Operations',
     items: [
-      { to: '/app/vendors', label: 'Vendors', icon: ReceiptText, permission: 'vendors.view' },
       { to: '/app/documents', label: 'Documents', icon: FileText, permission: 'documents.view' },
     ],
   },
