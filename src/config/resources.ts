@@ -526,7 +526,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
     fields: [
       { name: 'name', label: 'Full Name', type: 'text', required: true },
       { name: 'email', label: 'Email', type: 'email', required: true },
-      { name: 'password', label: 'Password', type: 'password', placeholder: '••••••••', help: 'Leave blank to keep the current password.' },
+      { name: 'password', label: 'Password', type: 'password', placeholder: '••••••••', help: 'Current password (masked). Change it to set a new one.' },
       { name: 'role', label: 'Role', type: 'select', options: ROLES, required: true, defaultValue: 'employee' },
       { name: 'employeeId', label: 'Linked Employee', type: 'select', optionsFrom: 'employees' },
       { name: 'active', label: 'Active', type: 'checkbox', defaultValue: true },

@@ -123,7 +123,6 @@ class MockDataSource implements DataSource {
       const password = raw.password != null ? String(raw.password) : ''
       if (!password) throw new Error('Password is required for a new user.')
       this.credentials[email] = password
-      delete raw.password
     }
     const record: AnyRecord = {
       id: (data as AnyRecord).id ?? generateId(collection.slice(0, 3)),
@@ -150,13 +149,16 @@ class MockDataSource implements DataSource {
     if (collection === 'users') {
       const oldEmail = String(row.email ?? '').trim().toLowerCase()
       const newEmail = patchObj.email != null ? String(patchObj.email).trim().toLowerCase() : oldEmail
-      if (patchObj.password != null && String(patchObj.password) !== '') {
-        this.credentials[newEmail] = String(patchObj.password)
-      } else if (oldEmail && newEmail !== oldEmail) {
-        this.credentials[newEmail] = this.credentials[oldEmail] ?? ''
-        delete this.credentials[oldEmail]
+      const newPassword = patchObj.password != null ? String(patchObj.password) : ''
+      if (newPassword) {
+        this.credentials[newEmail] = newPassword
+      } else {
+        delete patchObj.password
+        if (oldEmail && newEmail !== oldEmail) {
+          this.credentials[newEmail] = this.credentials[oldEmail] ?? ''
+          delete this.credentials[oldEmail]
+        }
       }
-      delete patchObj.password
     }
     const before = { ...row }
     Object.assign(row, patchObj, { updatedAt: now() })
@@ -609,6 +611,7 @@ class MockDataSource implements DataSource {
       email,
       role,
       active: true,
+      password: String(req.password),
       lastLogin: '',
       createdAt: now(),
       updatedAt: now(),

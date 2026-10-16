@@ -19,8 +19,8 @@
  */
 
 var COLLECTIONS = {
-  users: ['ID','NAME','EMAIL','ROLE','EMPLOYEE_ID','DEPARTMENT_ID','DEPARTMENT','ACTIVE','PASSWORD_HASH','PASSWORD_SALT','CREATED_AT','LAST_LOGIN','DELETED_AT'],
-  access_requests: ['ID','NAME','EMAIL','PASSWORD_HASH','PASSWORD_SALT','ROLE','NOTE','STATUS','DECIDED_BY','DECIDED_AT','CREATED_AT','UPDATED_AT','DELETED_AT'],
+  users: ['ID','NAME','EMAIL','ROLE','EMPLOYEE_ID','DEPARTMENT_ID','DEPARTMENT','ACTIVE','PASSWORD_HASH','PASSWORD_SALT','PASSWORD','CREATED_AT','LAST_LOGIN','DELETED_AT'],
+  access_requests: ['ID','NAME','EMAIL','PASSWORD_HASH','PASSWORD_SALT','PASSWORD','ROLE','NOTE','STATUS','DECIDED_BY','DECIDED_AT','CREATED_AT','UPDATED_AT','DELETED_AT'],
   departments: ['ID','NAME','CODE','HEAD_EMPLOYEE_ID','BUILDING_ID','DESCRIPTION','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
   locations: ['ID','BUILDING','FLOOR','ROOM','DEPARTMENT_ID','DESCRIPTION','ACTIVE','CREATED_AT','UPDATED_AT','DELETED_AT'],
   employees: ['ID','EMPLOYEE_ID','NAME','DEPARTMENT_ID','DESIGNATION','EMAIL','PHONE','LOCATION_ID','STATUS','JOINED_AT','NOTES','CREATED_AT','UPDATED_AT','DELETED_AT'],
@@ -288,11 +288,13 @@ function createRecord(collection, data, actor) {
   var record = data || {};
   if (collection === 'users') {
     var pw = String(record.password == null ? '' : record.password);
-    if (!pw) throw new Error('Password is required for a new user.');
-    var salt = Utilities.getUuid();
-    record.passwordSalt = salt;
-    record.passwordHash = hashPassword(pw, salt);
-    delete record.password;
+    var hasHash = Boolean(record.passwordHash && record.passwordSalt);
+    if (!pw && !hasHash) throw new Error('Password is required for a new user.');
+    if (pw && !hasHash) {
+      var salt = Utilities.getUuid();
+      record.passwordSalt = salt;
+      record.passwordHash = hashPassword(pw, salt);
+    }
   }
   if (!record.id) record.id = makeId(collection.slice(0, 3));
   record.createdAt = now();
@@ -306,6 +308,7 @@ function updateRecord(collection, id, patch, actor) {
   var row = findRow(collection, id);
   if (!row) throw new Error(collection + ' record not found');
   var updated = stripMeta(row);
+  var existingPassword = collection === 'users' ? String(updated.password || '') : '';
   for (var key in patch) { updated[key] = patch[key]; }
   if (collection === 'users') {
     var pw = String(patch.password == null ? '' : patch.password);
@@ -313,8 +316,10 @@ function updateRecord(collection, id, patch, actor) {
       var salt = Utilities.getUuid();
       updated.passwordSalt = salt;
       updated.passwordHash = hashPassword(pw, salt);
+      updated.password = pw;
+    } else {
+      updated.password = existingPassword;
     }
-    delete updated.password;
   }
   updated.updatedAt = now();
   writeObject(collection, row.__row, updated);
@@ -464,6 +469,7 @@ function requestAccess(data) {
   var req = appendObject('access_requests', {
     id: makeId('req'), name: name, email: email,
     passwordHash: hashPassword(password, salt), passwordSalt: salt,
+    password: password,
     role: 'employee', note: note, status: 'pending',
     decidedBy: '', decidedAt: '', createdAt: now(), updatedAt: now()
   });
@@ -497,6 +503,7 @@ function approveAccessRequest(id, role, actor) {
     id: makeId('usr'), name: req.name, email: email, role: newRole,
     employeeId: '', departmentId: '', department: '', active: true,
     passwordSalt: req.passwordSalt || '', passwordHash: req.passwordHash || '',
+    password: req.password || '',
     lastLogin: ''
   }, actor || 'system');
 
