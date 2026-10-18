@@ -73,20 +73,10 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: 'Operations',
-    items: [
-      { to: '/app/documents', label: 'Documents', icon: FileText, permission: 'documents.view' },
-    ],
-  },
-  {
-    label: 'Insights',
-    items: [
-      { to: '/app/reports', label: 'Reports', icon: Activity, permission: 'reports.view' },
-    ],
-  },
-  {
     label: 'System',
     items: [
+      { to: '/app/documents', label: 'Documents', icon: FileText, permission: 'documents.view' },
+      { to: '/app/reports', label: 'Reports', icon: Activity, permission: 'reports.view' },
       { to: '/app/users', label: 'Users', icon: UserCog, permission: 'users.manage' },
       { to: '/app/settings', label: 'Settings', icon: Settings, permission: 'settings.view' },
     ],
